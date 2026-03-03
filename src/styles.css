@@ -1,0 +1,247 @@
+/* ── Reset & base ────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:        #0d1117;
+  --surface:   #161b22;
+  --border:    #30363d;
+  --text:      #c9d1d9;
+  --text-muted:#8b949e;
+  --accent:    #58a6ff;
+  --green:     #3fb950;
+  --red:       #f85149;
+  --orange:    #d29922;
+  --purple:    #bc8cff;
+  --radius:    6px;
+  --font:      -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+}
+
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  height: 100vh;
+  overflow: hidden;
+}
+
+a { color: var(--accent); }
+code { background: var(--surface); padding: 2px 6px; border-radius: 3px; font-size: 0.85em; }
+
+/* ── Screens ─────────────────────────────────── */
+.screen { display: none; }
+.screen.active { display: flex; height: 100vh; }
+
+/* ── Login ───────────────────────────────────── */
+#login-screen {
+  justify-content: center;
+  align-items: center;
+}
+.login-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 2.5rem;
+  max-width: 440px;
+  width: 100%;
+  text-align: center;
+}
+.login-card h1 { margin-bottom: 0.75rem; font-size: 1.6rem; }
+.login-card p  { color: var(--text-muted); margin-bottom: 1rem; font-size: 0.9rem; }
+.login-card input {
+  width: 100%;
+  padding: 0.6rem 0.8rem;
+  margin-bottom: 1rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 0.95rem;
+}
+.login-card button {
+  width: 100%;
+  padding: 0.65rem;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
+  transition: opacity 0.15s;
+}
+.login-card button:hover { opacity: 0.85; }
+.error { color: var(--red); margin-top: 0.75rem; font-size: 0.85rem; }
+
+/* ── Sidebar ─────────────────────────────────── */
+#sidebar {
+  width: 280px;
+  min-width: 220px;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  padding: 1rem;
+  overflow-y: auto;
+}
+.sidebar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+.sidebar-header span { font-weight: 600; }
+.sidebar-header button {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  border-radius: var(--radius);
+  padding: 0.25rem 0.5rem;
+  cursor: pointer;
+}
+#sidebar h3 { font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.5rem; }
+#repo-search {
+  width: 100%;
+  padding: 0.4rem 0.6rem;
+  margin-bottom: 0.5rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 0.85rem;
+}
+#repo-list { list-style: none; }
+#repo-list li {
+  padding: 0.45rem 0.6rem;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#repo-list li:hover { background: var(--border); }
+#repo-list li.selected { background: var(--accent); color: #fff; }
+
+/* ── Content ─────────────────────────────────── */
+#content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Tabs */
+#tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+.tab {
+  padding: 0.65rem 1.2rem;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 0.9rem;
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+}
+.tab:hover { color: var(--text); }
+.tab.active { color: var(--text); border-bottom-color: var(--accent); }
+
+/* Toolbar */
+#toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+#toolbar select,
+#toolbar input {
+  padding: 0.35rem 0.6rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 0.85rem;
+}
+#toolbar .spacer { flex: 1; }
+#toolbar button {
+  padding: 0.35rem 0.8rem;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: opacity 0.15s;
+}
+#toolbar button:disabled { opacity: 0.4; cursor: default; }
+#toolbar button:not(:disabled):hover { opacity: 0.85; }
+
+/* Tab panels */
+.tab-panel { display: none; overflow: auto; flex: 1; }
+.tab-panel.active { display: block; }
+
+/* Tables */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+thead th {
+  position: sticky;
+  top: 0;
+  background: var(--surface);
+  text-align: left;
+  padding: 0.55rem 0.8rem;
+  border-bottom: 1px solid var(--border);
+  font-weight: 600;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+tbody td {
+  padding: 0.5rem 0.8rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+tbody tr:hover { background: rgba(88,166,255,0.06); }
+
+/* Badges */
+.badge {
+  display: inline-block;
+  padding: 1px 7px;
+  border-radius: 12px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  margin-right: 4px;
+}
+.badge-open   { background: rgba(63,185,80,0.2); color: var(--green); }
+.badge-closed { background: rgba(248,81,73,0.2); color: var(--red); }
+.badge-merged { background: rgba(188,140,255,0.2); color: var(--purple); }
+.badge-label  { background: rgba(88,166,255,0.15); color: var(--accent); }
+
+.severity-critical { color: var(--red); font-weight: 700; }
+.severity-high     { color: var(--orange); font-weight: 600; }
+.severity-medium   { color: var(--text); }
+.severity-low      { color: var(--text-muted); }
+
+/* Misc */
+#placeholder {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: var(--text-muted);
+  font-size: 1.05rem;
+}
+#loading {
+  text-align: center;
+  padding: 2rem;
+  color: var(--text-muted);
+}
+.hidden { display: none !important; }

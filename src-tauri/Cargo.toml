@@ -1,0 +1,29 @@
+[package]
+name = "github-export"
+version = "0.1.0"
+description = "A desktop app for managing GitHub issues, PRs, and security alerts"
+authors = ["GitHub Export Contributors"]
+license = "MIT"
+repository = "https://github.com/your-org/github-export"
+edition = "2021"
+
+[build-dependencies]
+tauri-build = { version = "1", features = [] }
+
+[dependencies]
+tauri = { version = "1", features = ["dialog-save", "shell-open"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["full"] }
+octocrab = "0.38"
+csv = "1.3"
+genpdf = "0.2"
+chrono = { version = "0.4", features = ["serde"] }
+reqwest = { version = "0.12", features = ["json"] }
+keyring = { version = "3", features = ["apple-native", "windows-native", "sync-secret-service"] }
+thiserror = "1"
+anyhow = "1"
+
+[features]
+default = ["custom-protocol"]
+custom-protocol = ["tauri/custom-protocol"]

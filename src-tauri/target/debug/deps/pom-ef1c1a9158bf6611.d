@@ -1,0 +1,11 @@
+C:\Projects\github-export\src-tauri\target\debug\deps\pom-ef1c1a9158bf6611.d: C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\pom-3.4.0\src\lib.rs C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\pom-3.4.0\src\range.rs C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\pom-3.4.0\src\result.rs C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\pom-3.4.0\src\set.rs C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\pom-3.4.0\src\parser.rs C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\pom-3.4.0\src\char_class.rs C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\pom-3.4.0\src\utf8.rs
+
+C:\Projects\github-export\src-tauri\target\debug\deps\libpom-ef1c1a9158bf6611.rmeta: C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\pom-3.4.0\src\lib.rs C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\pom-3.4.0\src\range.rs C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\pom-3.4.0\src\result.rs C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\pom-3.4.0\src\set.rs C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\pom-3.4.0\src\parser.rs C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\pom-3.4.0\src\char_class.rs C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\pom-3.4.0\src\utf8.rs
+
+C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\pom-3.4.0\src\lib.rs:
+C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\pom-3.4.0\src\range.rs:
+C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\pom-3.4.0\src\result.rs:
+C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\pom-3.4.0\src\set.rs:
+C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\pom-3.4.0\src\parser.rs:
+C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\pom-3.4.0\src\char_class.rs:
+C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\pom-3.4.0\src\utf8.rs:

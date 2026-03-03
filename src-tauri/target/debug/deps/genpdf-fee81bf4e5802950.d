@@ -1,0 +1,11 @@
+C:\Projects\github-export\src-tauri\target\debug\deps\genpdf-fee81bf4e5802950.d: C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\genpdf-0.2.0\src\lib.rs C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\genpdf-0.2.0\src\wrap.rs C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\genpdf-0.2.0\src\elements.rs C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\genpdf-0.2.0\src\error.rs C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\genpdf-0.2.0\src\fonts.rs C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\genpdf-0.2.0\src\render.rs C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\genpdf-0.2.0\src\style.rs
+
+C:\Projects\github-export\src-tauri\target\debug\deps\libgenpdf-fee81bf4e5802950.rmeta: C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\genpdf-0.2.0\src\lib.rs C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\genpdf-0.2.0\src\wrap.rs C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\genpdf-0.2.0\src\elements.rs C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\genpdf-0.2.0\src\error.rs C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\genpdf-0.2.0\src\fonts.rs C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\genpdf-0.2.0\src\render.rs C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\genpdf-0.2.0\src\style.rs
+
+C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\genpdf-0.2.0\src\lib.rs:
+C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\genpdf-0.2.0\src\wrap.rs:
+C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\genpdf-0.2.0\src\elements.rs:
+C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\genpdf-0.2.0\src\error.rs:
+C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\genpdf-0.2.0\src\fonts.rs:
+C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\genpdf-0.2.0\src\render.rs:
+C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\genpdf-0.2.0\src\style.rs:

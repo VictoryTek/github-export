@@ -1,0 +1,9 @@
+C:\Projects\github-export\src-tauri\target\debug\deps\hyper_rustls-d9c36568a497571c.d: C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\hyper-rustls-0.26.0\src\lib.rs C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\hyper-rustls-0.26.0\src\config.rs C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\hyper-rustls-0.26.0\src\connector.rs C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\hyper-rustls-0.26.0\src\connector\builder.rs C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\hyper-rustls-0.26.0\src\stream.rs
+
+C:\Projects\github-export\src-tauri\target\debug\deps\libhyper_rustls-d9c36568a497571c.rmeta: C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\hyper-rustls-0.26.0\src\lib.rs C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\hyper-rustls-0.26.0\src\config.rs C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\hyper-rustls-0.26.0\src\connector.rs C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\hyper-rustls-0.26.0\src\connector\builder.rs C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\hyper-rustls-0.26.0\src\stream.rs
+
+C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\hyper-rustls-0.26.0\src\lib.rs:
+C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\hyper-rustls-0.26.0\src\config.rs:
+C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\hyper-rustls-0.26.0\src\connector.rs:
+C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\hyper-rustls-0.26.0\src\connector\builder.rs:
+C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\hyper-rustls-0.26.0\src\stream.rs:

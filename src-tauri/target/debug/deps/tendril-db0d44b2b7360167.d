@@ -1,0 +1,11 @@
+C:\Projects\github-export\src-tauri\target\debug\deps\tendril-db0d44b2b7360167.d: C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tendril-0.4.3\src\lib.rs C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tendril-0.4.3\src\fmt.rs C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tendril-0.4.3\src\stream.rs C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tendril-0.4.3\src\buf32.rs C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tendril-0.4.3\src\tendril.rs C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tendril-0.4.3\src\utf8_decode.rs C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tendril-0.4.3\src\util.rs
+
+C:\Projects\github-export\src-tauri\target\debug\deps\libtendril-db0d44b2b7360167.rmeta: C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tendril-0.4.3\src\lib.rs C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tendril-0.4.3\src\fmt.rs C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tendril-0.4.3\src\stream.rs C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tendril-0.4.3\src\buf32.rs C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tendril-0.4.3\src\tendril.rs C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tendril-0.4.3\src\utf8_decode.rs C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tendril-0.4.3\src\util.rs
+
+C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tendril-0.4.3\src\lib.rs:
+C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tendril-0.4.3\src\fmt.rs:
+C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tendril-0.4.3\src\stream.rs:
+C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tendril-0.4.3\src\buf32.rs:
+C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tendril-0.4.3\src\tendril.rs:
+C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tendril-0.4.3\src\utf8_decode.rs:
+C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tendril-0.4.3\src\util.rs:

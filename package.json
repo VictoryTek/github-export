@@ -1,0 +1,14 @@
+{
+  "name": "github-export",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Desktop app for managing GitHub issues, PRs, and security alerts",
+  "scripts": {
+    "tauri": "tauri",
+    "dev": "tauri dev",
+    "build": "tauri build"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^1"
+  }
+}

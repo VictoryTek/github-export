@@ -1,0 +1,10 @@
+C:\Projects\github-export\src-tauri\target\debug\deps\tauri_build-eaea129206e84d46.d: C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tauri-build-1.5.6\src\lib.rs C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tauri-build-1.5.6\src\allowlist.rs C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tauri-build-1.5.6\src\static_vcruntime.rs C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tauri-build-1.5.6\src\window-app-manifest.xml
+
+C:\Projects\github-export\src-tauri\target\debug\deps\libtauri_build-eaea129206e84d46.rlib: C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tauri-build-1.5.6\src\lib.rs C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tauri-build-1.5.6\src\allowlist.rs C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tauri-build-1.5.6\src\static_vcruntime.rs C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tauri-build-1.5.6\src\window-app-manifest.xml
+
+C:\Projects\github-export\src-tauri\target\debug\deps\libtauri_build-eaea129206e84d46.rmeta: C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tauri-build-1.5.6\src\lib.rs C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tauri-build-1.5.6\src\allowlist.rs C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tauri-build-1.5.6\src\static_vcruntime.rs C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tauri-build-1.5.6\src\window-app-manifest.xml
+
+C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tauri-build-1.5.6\src\lib.rs:
+C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tauri-build-1.5.6\src\allowlist.rs:
+C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tauri-build-1.5.6\src\static_vcruntime.rs:
+C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\tauri-build-1.5.6\src\window-app-manifest.xml:

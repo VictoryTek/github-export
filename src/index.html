@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GitHub Export</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- ─── Login screen ─────────────────────────── -->
+  <section id="login-screen" class="screen active">
+    <div class="login-card">
+      <h1>🔑 GitHub Export</h1>
+      <p>Enter a <a href="https://github.com/settings/tokens" target="_blank">Personal Access Token</a> with
+        <code>repo</code> and <code>security_events</code> scopes.</p>
+      <input id="token-input" type="password" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" />
+      <button id="login-btn">Connect</button>
+      <p id="login-error" class="error"></p>
+    </div>
+  </section>
+
+  <!-- ─── Main app ─────────────────────────────── -->
+  <section id="app-screen" class="screen">
+    <!-- Sidebar -->
+    <aside id="sidebar">
+      <div class="sidebar-header">
+        <span id="username"></span>
+        <button id="logout-btn" title="Logout">⎋</button>
+      </div>
+      <h3>Repositories</h3>
+      <input id="repo-search" type="text" placeholder="Filter repos…" />
+      <ul id="repo-list"></ul>
+    </aside>
+
+    <!-- Content area -->
+    <main id="content">
+      <!-- Tabs -->
+      <nav id="tabs">
+        <button class="tab active" data-tab="issues">Issues</button>
+        <button class="tab" data-tab="pulls">Pull Requests</button>
+        <button class="tab" data-tab="alerts">Security Alerts</button>
+      </nav>
+
+      <!-- Toolbar -->
+      <div id="toolbar">
+        <select id="state-filter">
+          <option value="open">Open</option>
+          <option value="closed">Closed</option>
+          <option value="all">All</option>
+        </select>
+        <select id="sort-filter">
+          <option value="created">Newest</option>
+          <option value="updated">Recently Updated</option>
+          <option value="comments">Most Commented</option>
+        </select>
+        <input id="search-input" type="text" placeholder="Search…" />
+        <div class="spacer"></div>
+        <button id="export-csv-btn" disabled>Export CSV</button>
+        <button id="export-pdf-btn" disabled>Export PDF</button>
+      </div>
+
+      <!-- Data tables -->
+      <div id="tab-issues" class="tab-panel active">
+        <table id="issues-table">
+          <thead>
+            <tr>
+              <th>#</th><th>Title</th><th>State</th><th>Author</th><th>Labels</th><th>Created</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <div id="tab-pulls" class="tab-panel">
+        <table id="pulls-table">
+          <thead>
+            <tr>
+              <th>#</th><th>Title</th><th>State</th><th>Author</th><th>Head → Base</th><th>Draft</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <div id="tab-alerts" class="tab-panel">
+        <table id="alerts-table">
+          <thead>
+            <tr>
+              <th>ID</th><th>Severity</th><th>Summary</th><th>Package</th><th>Vulnerable</th><th>Patched</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <!-- Empty / loading state -->
+      <div id="placeholder">
+        <p>Select a repository from the sidebar to get started.</p>
+      </div>
+      <div id="loading" class="hidden">Loading…</div>
+    </main>
+  </section>
+
+  <script src="main.js"></script>
+</body>
+</html>

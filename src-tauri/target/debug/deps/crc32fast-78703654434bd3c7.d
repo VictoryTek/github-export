@@ -1,0 +1,10 @@
+C:\Projects\github-export\src-tauri\target\debug\deps\crc32fast-78703654434bd3c7.d: C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\crc32fast-1.5.0\src\lib.rs C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\crc32fast-1.5.0\src\baseline.rs C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\crc32fast-1.5.0\src\combine.rs C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\crc32fast-1.5.0\src\specialized\mod.rs C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\crc32fast-1.5.0\src\table.rs C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\crc32fast-1.5.0\src\specialized\pclmulqdq.rs
+
+C:\Projects\github-export\src-tauri\target\debug\deps\libcrc32fast-78703654434bd3c7.rmeta: C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\crc32fast-1.5.0\src\lib.rs C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\crc32fast-1.5.0\src\baseline.rs C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\crc32fast-1.5.0\src\combine.rs C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\crc32fast-1.5.0\src\specialized\mod.rs C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\crc32fast-1.5.0\src\table.rs C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\crc32fast-1.5.0\src\specialized\pclmulqdq.rs
+
+C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\crc32fast-1.5.0\src\lib.rs:
+C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\crc32fast-1.5.0\src\baseline.rs:
+C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\crc32fast-1.5.0\src\combine.rs:
+C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\crc32fast-1.5.0\src\specialized\mod.rs:
+C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\crc32fast-1.5.0\src\table.rs:
+C:\Users\JordanHowell\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\crc32fast-1.5.0\src\specialized\pclmulqdq.rs:
