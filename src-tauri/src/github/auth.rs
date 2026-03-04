@@ -7,7 +7,7 @@ use tauri::Manager;
 use crate::models::AppState;
 
 // Replace with your GitHub OAuth App Client ID from https://github.com/settings/developers
-const GITHUB_CLIENT_ID: &str = "YOUR_OAUTH_APP_CLIENT_ID";
+const GITHUB_CLIENT_ID: &str = "Ov23lit0Ok09PHqufOw7";
 const DEVICE_CODE_URL: &str = "https://github.com/login/device/code";
 const ACCESS_TOKEN_URL: &str = "https://github.com/login/oauth/access_token";
 const OAUTH_SCOPES: &str = "repo security_events";
