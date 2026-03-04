@@ -1,15 +1,14 @@
 // ── Tauri API bridge ────────────────────────────
-const { invoke } = window.__TAURI__.tauri;
-const { save }   = window.__TAURI__.dialog;
+// Use lazy wrappers — window.__TAURI__ is injected after script parse time
+const invoke = (...args) => window.__TAURI__.tauri.invoke(...args);
+const save   = (...args) => window.__TAURI__.dialog.save(...args);
 
 // ── DOM references ──────────────────────────────
 const $  = (sel) => document.querySelector(sel);
 const $$ = (sel) => document.querySelectorAll(sel);
 
 const loginScreen  = $("#login-screen");
-const appScreen    = $("#app-screen");
-const tokenInput   = $("#token-input");
-const loginBtn     = $("#login-btn");
+const appScreen    = $("#app-container");
 const loginError   = $("#login-error");
 const usernameEl   = $("#username");
 const logoutBtn    = $("#logout-btn");
@@ -32,37 +31,114 @@ let activeTab = "issues";
 let selectedRepo = null;   // { owner, name }
 
 // ── Boot ────────────────────────────────────────
+window.addEventListener("error", (e) => {
+  document.getElementById("login-error").textContent = "JS error: " + e.message;
+  document.getElementById("login-error").classList.remove("hidden");
+});
+
 document.addEventListener("DOMContentLoaded", async () => {
+  const errEl = document.getElementById("login-error");
+  const showErr = (msg) => { errEl.textContent = msg; errEl.classList.remove("hidden"); };
+
+  let devMode = false;
+  try {
+    devMode = await invoke("get_dev_mode");
+  } catch (e) {
+    showErr("get_dev_mode failed: " + String(e));
+    return;
+  }
+
+  if (devMode) {
+    document.getElementById("dev-mode-banner").classList.remove("hidden");
+    let user;
+    try {
+      user = await invoke("restore_session");
+    } catch (e) {
+      showErr("restore_session failed: " + String(e));
+      return;
+    }
+    if (!user) { showErr("restore_session returned null in mock mode"); return; }
+    try {
+      await showApp(user);
+    } catch (e) {
+      showErr("showApp failed: " + String(e));
+    }
+    return;
+  }
+
+  // Normal mode: try to restore a saved session from the OS keyring
   try {
     const user = await invoke("restore_session");
-    if (user) showApp(user);
-  } catch (_) { /* no stored session */ }
+    if (user) await showApp(user);
+  } catch (_) { /* no stored session — stay on login screen */ }
 });
 
 // ── Auth ────────────────────────────────────────
-loginBtn.addEventListener("click", async () => {
-  loginError.textContent = "";
-  const token = tokenInput.value.trim();
-  if (!token) { loginError.textContent = "Token is required."; return; }
+// OAuth Device Flow
+let pollingCancelled = false;
+
+document.getElementById('signin-btn').addEventListener('click', async () => {
+  pollingCancelled = false;
+  document.getElementById('signin-btn').disabled = true;
+  loginError.classList.add('hidden');
+
   try {
-    const user = await invoke("authenticate", { token });
-    showApp(user);
-  } catch (e) {
-    loginError.textContent = String(e);
+    const flow = await invoke('start_device_flow');
+
+    // Show the code card with the user code
+    document.getElementById('user-code-text').textContent = flow.user_code;
+    document.getElementById('device-code-card').classList.remove('hidden');
+
+    // Copy button handler (register once per flow invocation)
+    const copyBtn = document.getElementById('copy-code-btn');
+    copyBtn.addEventListener('click', () => {
+      navigator.clipboard.writeText(flow.user_code);
+      copyBtn.title = 'Copied!';
+    }, { once: true });
+
+    // Cancel button handler
+    document.getElementById('cancel-auth-btn').addEventListener('click', () => {
+      pollingCancelled = true;
+      document.getElementById('device-code-card').classList.add('hidden');
+      document.getElementById('signin-btn').disabled = false;
+    }, { once: true });
+
+    document.getElementById('auth-status-text').textContent = 'Waiting for authorization\u2026';
+
+    if (!pollingCancelled) {
+      try {
+        const username = await invoke('poll_device_flow', {
+          deviceCode: flow.device_code,
+          expiresIn: flow.expires_in,
+          interval: flow.interval,
+        });
+
+        // Success — transition to main app
+        await showApp(username);
+      } catch (err) {
+        loginError.textContent = String(err);
+        loginError.classList.remove('hidden');
+        document.getElementById('device-code-card').classList.add('hidden');
+        document.getElementById('signin-btn').disabled = false;
+      }
+    }
+  } catch (err) {
+    loginError.textContent = 'Failed to start sign-in: ' + String(err);
+    loginError.classList.remove('hidden');
+    document.getElementById('signin-btn').disabled = false;
   }
 });
 
 logoutBtn.addEventListener("click", async () => {
   await invoke("logout");
-  loginScreen.classList.add("active");
-  appScreen.classList.remove("active");
-  tokenInput.value = "";
+  loginScreen.classList.remove("hidden");
+  appScreen.classList.add("hidden");
 });
 
 async function showApp(username) {
   usernameEl.textContent = `@${username}`;
-  loginScreen.classList.remove("active");
-  appScreen.classList.add("active");
+  loginScreen.classList.add("hidden");
+  appScreen.classList.remove("hidden");
   await loadRepos();
 }
 

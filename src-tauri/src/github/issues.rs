@@ -34,7 +34,7 @@ pub async fn list_repos(client: &Octocrab) -> Result<Vec<Repo>> {
                 .as_ref()
                 .map(|u| u.to_string())
                 .unwrap_or_default(),
-            open_issues_count: r.open_issues_count.unwrap_or(0) as u32,
+            open_issues_count: r.open_issues_count.unwrap_or(0),
         })
         .collect();
 

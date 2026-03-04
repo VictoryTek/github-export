@@ -144,6 +144,40 @@ Tauri produces `.deb` and `.AppImage` out of the box. To create a **Flatpak**:
 
 > A sample Flatpak manifest will be added in a future release.
 
+### Nix / NixOS
+
+A `flake.nix` is included for NixOS users and anyone with Nix installed. Nix flakes must be enabled (`experimental-features = nix-command flakes` in your Nix config).
+
+**Install into your profile:**
+
+```bash
+nix profile install github:your-org/github-export
+```
+
+**Run directly without installing:**
+
+```bash
+nix run github:your-org/github-export
+```
+
+**Enter the development shell (all native deps pre-configured):**
+
+```bash
+nix develop
+# Then:
+npm install
+npm run dev
+```
+
+**Build locally from source:**
+
+```bash
+nix build .#
+./result/bin/github-export
+```
+
+> Note: `src-tauri/Cargo.lock` must be committed for the Nix build to be reproducible. The build is Linux-only; Windows and macOS users should use the standard `npm run build` path. `services.gnome.gnome-keyring.enable = true` must be set in your NixOS `configuration.nix` for credential storage to work.
+
 ---
 
 ## Library Recommendations

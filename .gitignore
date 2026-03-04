@@ -24,8 +24,18 @@ src-tauri/WixTools/
 .DS_Store
 Thumbs.db
 
+# Screenshots
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.webp
+
 # IDE / editor
 .vscode/settings.json
 .idea/
 *.swp
 *.swo
+
+# Nix — lock file is generated on Linux, commit it only when ready
+# flake.lock

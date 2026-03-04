@@ -6,6 +6,7 @@
   "scripts": {
     "tauri": "tauri",
     "dev": "tauri dev",
+    "dev:mock": "tauri dev --features dev-mock",
     "build": "tauri build"
   },
   "devDependencies": {

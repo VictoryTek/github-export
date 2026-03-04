@@ -1,50 +1,37 @@
 // Prevents additional console window on Windows in release builds
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+// In dev-mock builds the real GitHub functions are intentionally unused.
+#![cfg_attr(feature = "dev-mock", allow(dead_code, unused_imports))]
 
 mod export;
 mod github;
 mod models;
+#[cfg(feature = "dev-mock")]
+mod mock;
 
-use models::{AppState, ExportFormat, FilterParams};
+use github::auth::{start_device_flow, poll_device_flow};
+#[cfg(not(feature = "dev-mock"))]
+use models::FilterParams;
+use models::{AppState, ExportFormat};
 use std::sync::Mutex;
 use tauri::State;
+
+// ──────────────────────────────────────────────
+// Dev mode flag (non-mock build always returns false)
+// ──────────────────────────────────────────────
+
+#[cfg(not(feature = "dev-mock"))]
+#[tauri::command]
+fn get_dev_mode() -> bool {
+    false
+}
 
 // ──────────────────────────────────────────────
 // Tauri commands exposed to the frontend
 // ──────────────────────────────────────────────
 
-/// Authenticate with GitHub using a personal access token.
-#[tauri::command]
-async fn authenticate(
-    token: String,
-    state: State<'_, Mutex<AppState>>,
-) -> Result<String, String> {
-    let client = github::auth::authenticate_with_token(&token)
-        .await
-        .map_err(|e| e.to_string())?;
-
-    let user = client
-        .current()
-        .user()
-        .await
-        .map_err(|e| format!("Failed to fetch user: {e}"))?;
-
-    let username = user.login.clone();
-
-    let mut app = state.lock().map_err(|e| e.to_string())?;
-    app.client = Some(client);
-    app.token = Some(token);
-    app.username = Some(username.clone());
-
-    // Persist token in OS keyring for future sessions
-    if let Err(e) = github::auth::store_token(&app.token.as_ref().unwrap()) {
-        eprintln!("Warning: could not store token in keyring: {e}");
-    }
-
-    Ok(username)
-}
-
 /// Try to restore a previously saved token from the OS keyring.
+#[cfg(not(feature = "dev-mock"))]
 #[tauri::command]
 async fn restore_session(
     state: State<'_, Mutex<AppState>>,
@@ -86,6 +73,7 @@ fn logout(state: State<'_, Mutex<AppState>>) -> Result<(), String> {
 }
 
 /// List repositories visible to the authenticated user.
+#[cfg(not(feature = "dev-mock"))]
 #[tauri::command]
 async fn list_repos(
     state: State<'_, Mutex<AppState>>,
@@ -100,6 +88,7 @@ async fn list_repos(
 }
 
 /// Fetch issues for a given owner/repo with optional filters.
+#[cfg(not(feature = "dev-mock"))]
 #[tauri::command]
 async fn fetch_issues(
     owner: String,
@@ -117,6 +106,7 @@ async fn fetch_issues(
 }
 
 /// Fetch pull requests for a given owner/repo with optional filters.
+#[cfg(not(feature = "dev-mock"))]
 #[tauri::command]
 async fn fetch_pulls(
     owner: String,
@@ -134,6 +124,7 @@ async fn fetch_pulls(
 }
 
 /// Fetch Dependabot / code-scanning security alerts.
+#[cfg(not(feature = "dev-mock"))]
 #[tauri::command]
 async fn fetch_security_alerts(
     owner: String,
@@ -176,18 +167,38 @@ async fn export_data(
 // ──────────────────────────────────────────────
 
 fn main() {
-    tauri::Builder::default()
-        .manage(Mutex::new(AppState::default()))
-        .invoke_handler(tauri::generate_handler![
-            authenticate,
-            restore_session,
-            logout,
-            list_repos,
-            fetch_issues,
-            fetch_pulls,
-            fetch_security_alerts,
-            export_data,
-        ])
+    let builder = tauri::Builder::default()
+        .manage(Mutex::new(AppState::default()));
+
+    #[cfg(not(feature = "dev-mock"))]
+    let builder = builder.invoke_handler(tauri::generate_handler![
+        get_dev_mode,
+        start_device_flow,
+        poll_device_flow,
+        restore_session,
+        logout,
+        list_repos,
+        fetch_issues,
+        fetch_pulls,
+        fetch_security_alerts,
+        export_data,
+    ]);
+
+    #[cfg(feature = "dev-mock")]
+    let builder = builder.invoke_handler(tauri::generate_handler![
+        mock::get_dev_mode,
+        mock::restore_session,
+        mock::list_repos,
+        mock::fetch_issues,
+        mock::fetch_pulls,
+        mock::fetch_security_alerts,
+        start_device_flow,
+        poll_device_flow,
+        logout,
+        export_data,
+    ]);
+
+    builder
         .run(tauri::generate_context!())
         .expect("error while running GitHub Export");
 }
