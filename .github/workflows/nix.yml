@@ -37,7 +37,9 @@ jobs:
         run: nix build .# --no-link --show-trace
 
       - name: Verify flake.nix exists
-        run: test -f flake.nix && echo "flake.nix present" || (echo "ERROR: flake.nix missing" && exit 1)
+        run: |
+          test -f flake.nix && echo "flake.nix present" || (echo "ERROR: flake.nix missing" && exit 1)
 
       - name: Verify Cargo.lock exists
-        run: test -f src-tauri/Cargo.lock && echo "src-tauri/Cargo.lock present" || (echo "ERROR: src-tauri/Cargo.lock missing — commit it for reproducible Nix builds" && exit 1)
+        run: |
+          test -f src-tauri/Cargo.lock && echo "src-tauri/Cargo.lock present" || (echo "ERROR: src-tauri/Cargo.lock missing -- commit it for reproducible Nix builds" && exit 1)
