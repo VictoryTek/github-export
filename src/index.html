@@ -21,29 +21,43 @@
         </svg>
       </div>
       <h1 class="login-title">GitHub Export</h1>
-      <p class="login-subtitle">Sign in to export your repositories, issues, pull requests, and security data.</p>
-      <button id="signin-btn" class="btn-github-signin">
-        <svg height="20" viewBox="0 0 16 16" width="20" aria-hidden="true" fill="currentColor" style="margin-right:8px;vertical-align:middle">
-          <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>
-        </svg>
-        Sign in with GitHub
-      </button>
+      <p class="login-subtitle">Enter a GitHub Personal Access Token with <code>repo</code> and <code>security_events</code> scopes.</p>
 
-      <!-- Device code card, hidden until flow starts -->
-      <div id="device-code-card" class="device-code-card hidden">
-        <p class="device-code-instruction">Your browser has been opened to <strong>github.com/login/device</strong>.<br>Enter this code to authorize:</p>
-        <div class="device-code-display">
-          <span id="user-code-text"></span>
-          <button id="copy-code-btn" class="btn-copy" title="Copy code">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"/><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"/></svg>
-          </button>
-        </div>
-        <div class="device-code-waiting">
-          <div class="spinner"></div>
-          <span id="auth-status-text">Waiting for authorization…</span>
-        </div>
-        <button id="cancel-auth-btn" class="btn-cancel">Cancel</button>
+      <!-- PAT sign-in (primary) -->
+      <div class="pat-primary-form">
+        <input id="pat-input" type="password" placeholder="ghp_…  or  github_pat_…" class="pat-input" autocomplete="off" spellcheck="false" />
+        <button id="pat-submit-btn" class="btn-github-signin">Sign in</button>
+        <p class="pat-help-text">Generate a token at <strong>github.com → Settings → Developer settings → Personal access tokens</strong> with <code>repo</code> and <code>security_events</code> scopes.</p>
       </div>
+
+      <!-- OAuth Device Flow (secondary/collapsible) -->
+      <details class="oauth-section">
+        <summary class="oauth-section-summary">Sign in with OAuth Device Flow instead</summary>
+        <div class="oauth-section-body">
+          <button id="signin-btn" class="btn-oauth-secondary">
+            <svg height="16" viewBox="0 0 16 16" width="16" aria-hidden="true" fill="currentColor" style="margin-right:8px;vertical-align:middle">
+              <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>
+            </svg>
+            Sign in with GitHub (Device Flow)
+          </button>
+
+          <!-- Device code card, hidden until flow starts -->
+          <div id="device-code-card" class="device-code-card hidden">
+            <p class="device-code-instruction">Your browser has been opened to <strong>github.com/login/device</strong>.<br>Enter this code to authorize:</p>
+            <div class="device-code-display">
+              <span id="user-code-text"></span>
+              <button id="copy-code-btn" class="btn-copy" title="Copy code">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"/><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"/></svg>
+              </button>
+            </div>
+            <div class="device-code-waiting">
+              <div class="spinner"></div>
+              <span id="auth-status-text">Waiting for authorization…</span>
+            </div>
+            <button id="cancel-auth-btn" class="btn-cancel">Cancel</button>
+          </div>
+        </div>
+      </details>
 
       <div id="login-error" class="login-error hidden"></div>
     </div>
@@ -84,6 +98,7 @@
           <option value="comments">Most Commented</option>
         </select>
         <input id="search-input" type="text" placeholder="Search…" />
+        <button id="refresh-btn" title="Refresh">&#8635;</button>
         <div class="spacer"></div>
         <button id="export-csv-btn" disabled>Export CSV</button>
         <button id="export-pdf-btn" disabled>Export PDF</button>
@@ -116,7 +131,7 @@
         <table id="alerts-table">
           <thead>
             <tr>
-              <th>ID</th><th>Severity</th><th>Summary</th><th>Package</th><th>Vulnerable</th><th>Patched</th>
+              <th>ID</th><th>Type</th><th>Severity</th><th>Summary</th><th>Package</th><th>Vulnerable</th><th>Patched</th>
             </tr>
           </thead>
           <tbody></tbody>
@@ -131,6 +146,8 @@
     </main>
   </section>
 
+  <script src="vendor/marked.min.js"></script>
+  <script src="vendor/purify.min.js"></script>
   <script src="main.js"></script>
 </body>
 </html>

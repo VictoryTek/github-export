@@ -7,7 +7,7 @@
 //
 // Activate via: npm run dev:mock
 
-use crate::models::{AppState, FilterParams, Issue, PullRequest, Repo, SecurityAlert};
+use crate::models::{AppState, FilterParams, Issue, PullDetail, PullRequest, Repo, SecurityAlert};
 use chrono::DateTime;
 use std::sync::Mutex;
 
@@ -100,6 +100,8 @@ pub fn fetch_issues(
                 "Observed a null pointer dereference when the auth token is expired."
                     .to_string(),
             ),
+            comments: 7,
+            milestone: Some("v2.0".to_string()),
         },
         Issue {
             number: 57,
@@ -113,6 +115,8 @@ pub fn fetch_issues(
             closed_at: None,
             html_url: "https://github.com/octocat/Hello-World/issues/57".to_string(),
             body: Some("Users have requested a dark mode toggle in the settings panel.".to_string()),
+            comments: 3,
+            milestone: None,
         },
         Issue {
             number: 63,
@@ -126,6 +130,8 @@ pub fn fetch_issues(
             closed_at: None,
             html_url: "https://github.com/octocat/Hello-World/issues/63".to_string(),
             body: Some("The cursor-based pagination implementation stops at page 10.".to_string()),
+            comments: 1,
+            milestone: None,
         },
         Issue {
             number: 71,
@@ -141,6 +147,8 @@ pub fn fetch_issues(
             body: Some(
                 "Rate-limit errors currently surface raw HTTP 429 text to the user.".to_string(),
             ),
+            comments: 1,
+            milestone: None,
         },
         Issue {
             number: 78,
@@ -154,6 +162,8 @@ pub fn fetch_issues(
             closed_at: None,
             html_url: "https://github.com/octocat/Hello-World/issues/78".to_string(),
             body: Some("When exporting issues to CSV the assignees column is empty for all rows.".to_string()),
+            comments: 1,
+            milestone: None,
         },
     ])
 }
@@ -183,6 +193,7 @@ pub fn fetch_pulls(
             html_url: "https://github.com/octocat/Hello-World/pull/101".to_string(),
             draft: false,
             body: Some("Implements the GitHub OAuth Device Flow as per RFC 8628.".to_string()),
+            assignees: vec!["hubot".to_string()],
         },
         PullRequest {
             number: 115,
@@ -202,6 +213,7 @@ pub fn fetch_pulls(
             body: Some(
                 "The Markdown parser was retaining references to stale AST nodes. This PR frees them on drop.".to_string(),
             ),
+            assignees: vec!["octocat".to_string()],
         },
         PullRequest {
             number: 122,
@@ -219,6 +231,7 @@ pub fn fetch_pulls(
             html_url: "https://github.com/octocat/Hello-World/pull/122".to_string(),
             draft: true,
             body: Some("Draft: still working through the API surface changes in the new version.".to_string()),
+            assignees: vec![],
         },
     ])
 }
@@ -245,6 +258,14 @@ pub fn fetch_security_alerts(
             html_url: "https://github.com/octocat/Hello-World/security/dependabot/1"
                 .to_string(),
             created_at: dt("2025-09-15T12:00:00Z"),
+            alert_type: "dependabot".to_string(),
+            tool_name: None,
+            location_path: None,
+            cve_id: Some("CVE-2021-23337".to_string()),
+            cvss_score: Some(8.1),
+            cwes: vec!["CWE-78".to_string()],
+            dismissed_reason: None,
+            dismissed_comment: None,
         },
         SecurityAlert {
             id: 2,
@@ -260,8 +281,66 @@ pub fn fetch_security_alerts(
             html_url: "https://github.com/octocat/Hello-World/security/dependabot/2"
                 .to_string(),
             created_at: dt("2026-01-10T08:30:00Z"),
+            alert_type: "dependabot".to_string(),
+            tool_name: None,
+            location_path: None,
+            cve_id: Some("CVE-2024-28849".to_string()),
+            cvss_score: Some(6.5),
+            cwes: vec!["CWE-601".to_string()],
+            dismissed_reason: None,
+            dismissed_comment: None,
+        },
+        SecurityAlert {
+            id: 3,
+            severity: "error".to_string(),
+            summary: "SQL injection vulnerability".to_string(),
+            description: "A SQL injection vulnerability was detected in the query builder."
+                .to_string(),
+            package_name: None,
+            vulnerable_version_range: None,
+            patched_version: None,
+            state: "open".to_string(),
+            html_url: "https://github.com/octocat/Hello-World/security/code-scanning/3"
+                .to_string(),
+            created_at: dt("2026-02-20T10:00:00Z"),
+            alert_type: "code_scanning".to_string(),
+            tool_name: Some("CodeQL".to_string()),
+            location_path: Some("src/auth.rs".to_string()),
+            cve_id: None,
+            cvss_score: None,
+            cwes: vec!["CWE-89".to_string()],
+            dismissed_reason: None,
+            dismissed_comment: None,
         },
     ])
+}
+
+/// Returns mock pull request detail stats.
+#[tauri::command]
+pub fn get_pull_detail(
+    _owner: String,
+    _repo: String,
+    pull_number: u64,
+    _state: tauri::State<'_, Mutex<AppState>>,
+) -> Result<PullDetail, String> {
+    let (additions, deletions, changed_files, mergeable) = match pull_number {
+        101 => (320u64, 85u64, 12u64, Some(false)),
+        115 => (47u64, 9u64, 3u64, Some(true)),
+        122 => (128u64, 44u64, 8u64, Some(false)),
+        _   => (10u64, 2u64, 1u64, Some(true)),
+    };
+    Ok(PullDetail {
+        number: pull_number,
+        additions,
+        deletions,
+        changed_files,
+        mergeable,
+        mergeable_state: if mergeable == Some(true) {
+            Some("clean".to_string())
+        } else {
+            Some("dirty".to_string())
+        },
+    })
 }
 
 /// Always returns `true` — the frontend uses this to display the dev-mode banner.

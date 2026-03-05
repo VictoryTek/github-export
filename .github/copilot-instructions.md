@@ -199,8 +199,51 @@ Every user request MUST follow this workflow:
 │ • Pass full preflight output to refinement subagent         │
 └──────────────────────────┬──────────────────────────────────┘
                            ↓
-                (Return to Phase 4 → Phase 5 → Phase 6)
-                                                   ↓
+        (Return to Phase 4 → Phase 5 → Phase 6)
+                           ↓
+┌──────────────────────────┴──────────────────────────────────┐
+│ PHASE 7: COMMIT SUMMARY & DELIVERY                          │
+│ Orchestrator prepares final commit information              │
+│                                                             │
+│ Tasks:                                                      │
+│ • Aggregate all modified file paths from implementation     │
+│   and refinement phases                                     │
+│ • Summarize the feature, fix, or improvement implemented    │
+│ • Generate a conventional commit message                    │
+│ • Provide a concise developer-readable summary              │
+│                                                             │
+│ Commit Message Format (Conventional Commits):               │
+│                                                             │
+│ type(scope): short description                              │
+│                                                             │
+│ Example:                                                    │
+│ feat(auth): implement OAuth2 login flow                     │
+│                                                             │
+│ Output Structure:                                           │
+│                                                             │
+│ ## Commit Message                                           │
+│ <generated commit message>                                  │
+│                                                             │
+│ ## Summary of Changes                                       │
+│ • Feature or fix implemented                                │
+│ • Major architectural decisions                             │
+│ • Key files modified                                        │
+│ • Dependencies added or updated                             │
+│                                                             │
+│ ## Modified Files                                           │
+│ - path/to/file1                                             │
+│ - path/to/file2                                             │
+│ - path/to/file3                                             │
+│                                                             │
+│ ## Validation                                               │
+│ ✔ Build successful                                          │
+│ ✔ Tests passed                                              │
+│ ✔ Review approved                                           │
+│ ✔ Preflight passed                                          │
+│                                                             │
+│ Output must be copy-paste ready for git commit.             │
+└──────────────────────────┬──────────────────────────────────┘
+                           ↓
 ┌─────────────────────────────────────────────────────────────┐
 │ ORCHESTRATOR: Report completion to user                     │
 │ "All checks passed. Code is ready to push to GitHub."       │
@@ -473,6 +516,19 @@ The project's preflight script defines them.
 - Confirm:
 
 "All checks passed. Code is ready to push to GitHub."
+
+- Transition to Phase 7
+
+Spawn Commit Summary generation.
+
+The Orchestrator must produce:
+
+1. Commit Title
+2. Commit Body
+3. List of Modified Files
+4. Short Human Summary of the Work Completed
+
+This output must be formatted as a ready-to-use Git commit message.
 
 ---
 

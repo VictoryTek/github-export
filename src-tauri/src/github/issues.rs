@@ -127,6 +127,8 @@ pub async fn fetch_issues(
             closed_at: i.closed_at,
             html_url: i.html_url.to_string(),
             body: i.body,
+            comments: i.comments,
+            milestone: i.milestone.as_ref().map(|m| m.title.clone()),
         })
         .collect();
 

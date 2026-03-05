@@ -6,7 +6,17 @@ use std::time::{Duration, Instant};
 use tauri::Manager;
 use crate::models::AppState;
 
-// Replace with your GitHub OAuth App Client ID from https://github.com/settings/developers
+/// The GitHub OAuth App Client ID.
+///
+/// To obtain this:
+/// 1. Go to <https://github.com/settings/developers> → "OAuth Apps" → your app
+///    (or "New OAuth App" to create one)
+/// 2. Copy the "Client ID" value (format: Ov23xxxxxxxxxxxxxxxx)
+/// 3. **IMPORTANT**: On the same settings page, scroll to "Device Flow" and
+///    click "Enable Device Flow" — this is required for this app to work.
+///    It is disabled by default on all new OAuth Apps.
+///
+/// The Client ID is not a secret (RFC 8628 §3.4 — public clients).
 const GITHUB_CLIENT_ID: &str = "Ov23lit0Ok09PHqufOw7";
 const DEVICE_CODE_URL: &str = "https://github.com/login/device/code";
 const ACCESS_TOKEN_URL: &str = "https://github.com/login/oauth/access_token";
@@ -79,16 +89,45 @@ pub fn delete_token() -> Result<()> {
 pub async fn start_device_flow(app_handle: tauri::AppHandle) -> Result<DeviceFlowStart, String> {
     let client = reqwest::Client::new();
 
-    let resp: serde_json::Value = client
+    let response = client
         .post(DEVICE_CODE_URL)
         .header("Accept", "application/json")
         .form(&[("client_id", GITHUB_CLIENT_ID), ("scope", OAUTH_SCOPES)])
         .send()
         .await
-        .map_err(|e| format!("Failed to reach GitHub device code endpoint: {e}"))?
-        .json()
+        .map_err(|e| format!("Failed to reach GitHub device code endpoint: {e}"))?;
+
+    let status = response.status();
+    let body = response
+        .text()
         .await
-        .map_err(|e| format!("Failed to parse device code response: {e}"))?;
+        .map_err(|e| format!("Failed to read response body: {e}"))?;
+
+    let resp: serde_json::Value =
+        serde_json::from_str(&body).unwrap_or(serde_json::Value::Null);
+
+    if !status.is_success() {
+        let error_hint = resp["error"].as_str().unwrap_or("unknown error");
+        let description = resp["error_description"].as_str().unwrap_or(&body);
+        return Err(format!(
+            "GitHub returned HTTP {status}: {error_hint} — {description}\n\
+             Verify that the Client ID is correct and Device Flow is enabled \
+             on your OAuth App at https://github.com/settings/developers"
+        ));
+    }
+
+    // Also check application-level errors signalled in 200 responses
+    // (RFC 8628 §3.2).
+    if let Some(error) = resp["error"].as_str() {
+        let description = resp["error_description"]
+            .as_str()
+            .unwrap_or("No description provided by GitHub.");
+        return Err(format!(
+            "GitHub auth error: {error} — {description}\n\
+             If the error is \"unauthorized_client\", ensure Device Flow is enabled \
+             on your OAuth App at https://github.com/settings/developers"
+        ));
+    }
 
     let device_code = resp["device_code"]
         .as_str()
@@ -144,7 +183,7 @@ pub async fn poll_device_flow(
             return Err("Authorization timed out. Please try again.".to_string());
         }
 
-        let resp: serde_json::Value = client
+        let poll_response = client
             .post(ACCESS_TOKEN_URL)
             .header("Accept", "application/json")
             .form(&[
@@ -154,10 +193,24 @@ pub async fn poll_device_flow(
             ])
             .send()
             .await
-            .map_err(|e| format!("Failed to poll for access token: {e}"))?
-            .json()
+            .map_err(|e| format!("Failed to poll for access token: {e}"))?;
+
+        let poll_status = poll_response.status();
+        let poll_body = poll_response
+            .text()
             .await
-            .map_err(|e| format!("Failed to parse access token response: {e}"))?;
+            .map_err(|e| format!("Failed to read poll response body: {e}"))?;
+
+        let resp: serde_json::Value =
+            serde_json::from_str(&poll_body).unwrap_or(serde_json::Value::Null);
+
+        if !poll_status.is_success() {
+            let error_hint = resp["error"].as_str().unwrap_or("unknown error");
+            let description = resp["error_description"].as_str().unwrap_or(&poll_body);
+            return Err(format!(
+                "GitHub returned HTTP {poll_status}: {error_hint} — {description}"
+            ));
+        }
 
         // Success path
         if let Some(token) = resp["access_token"].as_str() {
@@ -215,4 +268,37 @@ pub async fn poll_device_flow(
             }
         }
     }
+}
+
+/// Authenticate using a GitHub Personal Access Token (PAT).
+///
+/// This is a fallback for users who prefer PATs or cannot complete the
+/// OAuth Device Flow (e.g., in restricted network environments).
+#[tauri::command]
+pub async fn authenticate_with_pat(
+    token: String,
+    state: tauri::State<'_, Mutex<AppState>>,
+) -> Result<String, String> {
+    let client = authenticate_with_token(&token)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    let user = client
+        .current()
+        .user()
+        .await
+        .map_err(|e| format!("Failed to fetch GitHub user: {e}"))?;
+
+    let username = user.login.clone();
+
+    if let Err(e) = store_token(&token) {
+        eprintln!("Warning: could not store token in keyring: {e}");
+    }
+
+    let mut app = state.lock().map_err(|e| e.to_string())?;
+    app.client = Some(client);
+    app.token = Some(token);
+    app.username = Some(username.clone());
+
+    Ok(username)
 }

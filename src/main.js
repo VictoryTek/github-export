@@ -29,6 +29,7 @@ let pulls     = [];
 let alerts    = [];
 let activeTab = "issues";
 let selectedRepo = null;   // { owner, name }
+let expandedRow  = null;   // { type: "issues"|"pulls"|"alerts", idx: number } | null
 
 // ── Boot ────────────────────────────────────────
 window.addEventListener("error", (e) => {
@@ -129,10 +130,34 @@ document.getElementById('signin-btn').addEventListener('click', async () => {
   }
 });
 
+document.getElementById('pat-submit-btn').addEventListener('click', async () => {
+  const token = document.getElementById('pat-input').value.trim();
+  if (!token) {
+    loginError.textContent = 'Please enter a Personal Access Token.';
+    loginError.classList.remove('hidden');
+    return;
+  }
+  document.getElementById('pat-submit-btn').disabled = true;
+  loginError.classList.add('hidden');
+  try {
+    const username = await invoke('authenticate_with_pat', { token });
+    await showApp(username);
+  } catch (err) {
+    loginError.textContent = 'PAT sign-in failed: ' + String(err);
+    loginError.classList.remove('hidden');
+    document.getElementById('pat-submit-btn').disabled = false;
+  }
+});
+
 logoutBtn.addEventListener("click", async () => {
   await invoke("logout");
   loginScreen.classList.remove("hidden");
   appScreen.classList.add("hidden");
+  document.getElementById('pat-input').value = '';
+  document.getElementById('pat-submit-btn').disabled = false;
+  document.getElementById('signin-btn').disabled = false;
+  document.getElementById('device-code-card').classList.add('hidden');
+  loginError.classList.add('hidden');
 });
 
 async function showApp(username) {
@@ -206,26 +231,49 @@ function buildFilters() {
 }
 
 // ── Data fetching ───────────────────────────────
+let issuesError = null, pullsError = null, alertsError = null;
+
 async function refreshData() {
   if (!selectedRepo) return;
   placeholder.classList.add("hidden");
   loading.classList.remove("hidden");
+  issuesError = null; pullsError = null; alertsError = null;
 
   const { owner, name } = selectedRepo;
   const filters = buildFilters();
 
-  try {
-    [issues, pulls, alerts] = await Promise.all([
-      invoke("fetch_issues",          { owner, repo: name, filters }),
-      invoke("fetch_pulls",           { owner, repo: name, filters }),
-      invoke("fetch_security_alerts", { owner, repo: name }),
-    ]);
-  } catch (e) {
-    console.error(e);
-    issues = []; pulls = []; alerts = [];
+  // Use allSettled so a failure in one tab doesn't blank out the others
+  const [issuesRes, pullsRes, alertsRes] = await Promise.allSettled([
+    invoke("fetch_issues",          { owner, repo: name, filters }),
+    invoke("fetch_pulls",           { owner, repo: name, filters }),
+    invoke("fetch_security_alerts", { owner, repo: name, state: filters.state }),
+  ]);
+
+  if (issuesRes.status === "fulfilled") {
+    issues = issuesRes.value;
+  } else {
+    issuesError = String(issuesRes.reason);
+    issues = [];
+    console.error("fetch_issues failed:", issuesRes.reason);
   }
 
-  // Client-side text search (the API search is limited)
+  if (pullsRes.status === "fulfilled") {
+    pulls = pullsRes.value;
+  } else {
+    pullsError = String(pullsRes.reason);
+    pulls = [];
+    console.error("fetch_pulls failed:", pullsRes.reason);
+  }
+
+  if (alertsRes.status === "fulfilled") {
+    alerts = alertsRes.value;
+  } else {
+    alertsError = String(alertsRes.reason);
+    alerts = [];
+    console.error("fetch_security_alerts failed:", alertsRes.reason);
+  }
+
+  // Client-side text search
   const q = (filters.search || "").toLowerCase();
   if (q) {
     issues = issues.filter((i) => i.title.toLowerCase().includes(q));
@@ -236,6 +284,8 @@ async function refreshData() {
   renderIssues();
   renderPulls();
   renderAlerts();
+
+  expandedRow = null; // Reset expanded state on data refresh
 
   loading.classList.add("hidden");
   exportCsv.disabled = false;
@@ -262,52 +312,121 @@ function shortDate(iso) {
 
 function renderIssues() {
   const tbody = $("#issues-table tbody");
+  if (issuesError) {
+    tbody.innerHTML = `<tr><td colspan="6" class="fetch-error">Failed to load issues: ${esc(issuesError)}</td></tr>`;
+    return;
+  }
   tbody.innerHTML = issues
-    .map((i) => `<tr>
+    .map((i, idx) => `
+      <tr class="data-row clickable-row" data-idx="${idx}" onclick="toggleDetailRow('issues', ${idx})">
         <td>${i.number}</td>
-        <td><a href="${i.html_url}" target="_blank">${esc(i.title)}</a></td>
+        <td>${esc(i.title)}</td>
         <td>${stateBadge(i.state)}</td>
         <td>${esc(i.author)}</td>
         <td>${labelBadges(i.labels)}</td>
         <td>${shortDate(i.created_at)}</td>
+      </tr>
+      <tr class="detail-row" id="detail-issues-${idx}">
+        <td colspan="6">
+          <div class="detail-body">${buildIssueDetail(i)}</div>
+        </td>
       </tr>`)
     .join("");
 }
 
 function renderPulls() {
   const tbody = $("#pulls-table tbody");
+  if (pullsError) {
+    tbody.innerHTML = `<tr><td colspan="6" class="fetch-error">Failed to load pull requests: ${esc(pullsError)}</td></tr>`;
+    return;
+  }
   tbody.innerHTML = pulls
-    .map((p) => `<tr>
+    .map((p, idx) => `
+      <tr class="data-row clickable-row" data-idx="${idx}" onclick="toggleDetailRow('pulls', ${idx})">
         <td>${p.number}</td>
-        <td><a href="${p.html_url}" target="_blank">${esc(p.title)}</a></td>
+        <td>${esc(p.title)}</td>
         <td>${stateBadge(p.state)}</td>
         <td>${esc(p.author)}</td>
         <td>${esc(p.head_branch)} → ${esc(p.base_branch)}</td>
         <td>${p.draft ? "✓" : ""}</td>
+      </tr>
+      <tr class="detail-row" id="detail-pulls-${idx}">
+        <td colspan="6">
+          <div class="detail-body">${buildPullDetail(p)}</div>
+        </td>
       </tr>`)
     .join("");
 }
 
+function normalizeSeverity(severity, alertType) {
+  if (alertType === 'code_scanning') {
+    const map = { 'critical': 'critical', 'high': 'high', 'error': 'high', 'medium': 'medium', 'warning': 'medium', 'low': 'low', 'note': 'low', 'info': 'low' };
+    return map[severity?.toLowerCase()] || 'low';
+  }
+  return severity?.toLowerCase() || 'low';
+}
+
 function renderAlerts() {
   const tbody = $("#alerts-table tbody");
+  if (alertsError) {
+    const isDisabled = alertsError.includes("disabled for this repository");
+    const cssClass = isDisabled ? "fetch-info" : "fetch-error";
+    const htmlMsg = esc(alertsError).replace(/\n/g, "<br>");
+    const guidance = isDisabled
+      ? `<br><br><strong>To enable:</strong> Go to your repository on GitHub →
+         <strong>Settings</strong> → <strong>Security</strong> section →
+         <strong>Advanced Security</strong> →
+         <strong>Dependabot Alerts</strong> → click <strong>Enable</strong>.
+         Then click the refresh button (↺) above.`
+      : "";
+    tbody.innerHTML = `<tr><td colspan="7" class="${cssClass}">${htmlMsg}${guidance}</td></tr>`;
+    return;
+  }
+  if (alerts.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7" class="fetch-info">
+      No security alerts found for the current filter.
+      <br><br>
+      <strong>Tips:</strong>
+      <br>• Try switching the filter to <strong>All</strong> to see dismissed or fixed alerts.
+      <br>• If you just enabled Dependabot, GitHub may still be scanning &mdash; wait a minute and click the refresh button (↺) above.
+      <br>• To enable Dependabot: GitHub repository → <strong>Settings</strong> → <strong>Security</strong> section → <strong>Advanced Security</strong> → <strong>Dependabot Alerts</strong> → <strong>Enable</strong>.
+      <br>• Code Scanning alerts appear here if a code scanning workflow (e.g., GitHub Actions CodeQL) is configured.
+    </td></tr>`;
+    return;
+  }
   tbody.innerHTML = alerts
-    .map((a) => {
-      const sev = a.severity.toLowerCase();
-      const cls = sev === "critical" ? "severity-critical"
-                : sev === "high"     ? "severity-high"
-                : sev === "medium"   ? "severity-medium"
-                :                      "severity-low";
-      return `<tr>
+    .map((a, idx) => {
+      const normalizedSev = normalizeSeverity(a.severity, a.alert_type);
+      const cls = normalizedSev === "critical" ? "severity-critical"
+                : normalizedSev === "high"     ? "severity-high"
+                : normalizedSev === "medium"   ? "severity-medium"
+                :                               "severity-low";
+      const typeLabel = a.alert_type === "code_scanning"
+        ? `Code Scanning${a.tool_name ? ` (${esc(a.tool_name)})` : ""}`
+        : "Dependabot";
+      return `
+      <tr class="data-row clickable-row" data-idx="${idx}" onclick="toggleDetailRow('alerts', ${idx})">
         <td>${a.id}</td>
+        <td>${typeLabel}</td>
         <td class="${cls}">${esc(a.severity)}</td>
-        <td><a href="${a.html_url}" target="_blank">${esc(a.summary)}</a></td>
+        <td>${esc(a.summary)}</td>
         <td>${esc(a.package_name || "—")}</td>
         <td>${esc(a.vulnerable_version_range || "—")}</td>
         <td>${esc(a.patched_version || "—")}</td>
+      </tr>
+      <tr class="detail-row" id="detail-alerts-${idx}">
+        <td colspan="7">
+          <div class="detail-body">${buildAlertDetail(a)}</div>
+        </td>
       </tr>`;
     })
     .join("");
 }
+
+// ── Refresh button ──────────────────────────────
+document.getElementById('refresh-btn').addEventListener('click', () => {
+  refreshData();
+});
 
 // ── Export ───────────────────────────────────────
 exportCsv.addEventListener("click", () => doExport("csv"));
@@ -340,4 +459,280 @@ function esc(str) {
   const el = document.createElement("span");
   el.textContent = str;
   return el.innerHTML;
+}
+
+// ── Markdown rendering ──────────────────────────
+function renderMarkdown(text) {
+  if (!text) return '<em class="detail-no-body">No description provided.</em>';
+  const rawHtml = marked.parse(text, { breaks: true, gfm: true });
+  return DOMPurify.sanitize(rawHtml);
+}
+
+// ── Expandable row logic ────────────────────────
+function collapseAllRows() {
+  document.querySelectorAll(".detail-row.expanded").forEach((row) => {
+    row.classList.remove("expanded");
+  });
+  document.querySelectorAll(".data-row.row-expanded").forEach((row) => {
+    row.classList.remove("row-expanded");
+  });
+  expandedRow = null;
+}
+
+async function toggleDetailRow(type, idx) {
+  const rowId = `detail-${type}-${idx}`;
+  const detailRow = document.getElementById(rowId);
+  if (!detailRow) return;
+
+  const isExpanded = detailRow.classList.contains("expanded");
+
+  // Collapse any currently open row
+  collapseAllRows();
+
+  if (!isExpanded) {
+    detailRow.classList.add("expanded");
+    // Highlight the parent data row
+    const dataRow = detailRow.previousElementSibling;
+    if (dataRow) dataRow.classList.add("row-expanded");
+    expandedRow = { type, idx };
+
+    // For PRs: lazily fetch diff stats on first expand
+    if (type === "pulls" && selectedRepo) {
+      const pull = pulls[idx];
+      const statsEl = document.getElementById(`pull-stats-${pull.number}`);
+      if (statsEl && statsEl.querySelector(".detail-pr-stats-loading")) {
+        try {
+          const detail = await invoke("get_pull_detail", {
+            owner: selectedRepo.owner,
+            repo: selectedRepo.name,
+            pullNumber: pull.number,
+          });
+          statsEl.innerHTML = `
+            <div class="detail-pr-stats-row">
+              <span class="stat-additions">+${detail.additions} additions</span>
+              <span class="stat-deletions">−${detail.deletions} deletions</span>
+              <span class="stat-files">${detail.changed_files} file${detail.changed_files !== 1 ? "s" : ""} changed</span>
+              ${detail.mergeable != null ? `<span class="stat-mergeable ${detail.mergeable ? "mergeable-yes" : "mergeable-no"}">${detail.mergeable ? "✓ Mergeable" : "✗ Not mergeable"}</span>` : ""}
+            </div>`;
+        } catch (e) {
+          statsEl.innerHTML = `<span class="detail-stats-error">Could not load diff stats: ${esc(String(e))}</span>`;
+        }
+      }
+    }
+  }
+}
+
+// ── Detail panel builders ───────────────────────
+function buildIssueDetail(issue) {
+  const assignees = issue.assignees && issue.assignees.length
+    ? issue.assignees.map(esc).join(", ")
+    : "—";
+  const labels = issue.labels && issue.labels.length
+    ? labelBadges(issue.labels)
+    : "—";
+  const milestone = issue.milestone ? esc(issue.milestone) : "—";
+  const comments = issue.comments != null ? issue.comments : "—";
+  const closedDate = issue.closed_at ? shortDate(issue.closed_at) : null;
+
+  return `
+    <div class="detail-content">
+      <div class="detail-header">
+        <span class="detail-type-badge">Issue #${issue.number}</span>
+        ${stateBadge(issue.state)}
+        <button class="detail-close-btn" onclick="collapseAllRows()" title="Close">×</button>
+      </div>
+      <div class="detail-body-text markdown-body">${renderMarkdown(issue.body)}</div>
+      <div class="detail-meta-grid">
+        <div class="detail-meta-item">
+          <span class="detail-meta-label">Author</span>
+          <span>${esc(issue.author)}</span>
+        </div>
+        <div class="detail-meta-item">
+          <span class="detail-meta-label">Assignees</span>
+          <span>${assignees}</span>
+        </div>
+        <div class="detail-meta-item">
+          <span class="detail-meta-label">Labels</span>
+          <span>${labels}</span>
+        </div>
+        <div class="detail-meta-item">
+          <span class="detail-meta-label">Milestone</span>
+          <span>${milestone}</span>
+        </div>
+        <div class="detail-meta-item">
+          <span class="detail-meta-label">Comments</span>
+          <span>${comments}</span>
+        </div>
+        <div class="detail-meta-item">
+          <span class="detail-meta-label">Created</span>
+          <span>${shortDate(issue.created_at)}</span>
+        </div>
+        <div class="detail-meta-item">
+          <span class="detail-meta-label">Updated</span>
+          <span>${shortDate(issue.updated_at)}</span>
+        </div>
+        ${closedDate ? `
+        <div class="detail-meta-item">
+          <span class="detail-meta-label">Closed</span>
+          <span>${closedDate}</span>
+        </div>` : ""}
+      </div>
+      <div class="detail-footer">
+        <a href="${esc(issue.html_url)}" target="_blank" rel="noopener noreferrer" class="detail-open-link">Open on GitHub ↗</a>
+      </div>
+    </div>`;
+}
+
+function buildPullDetail(pull) {
+  const assignees = pull.assignees && pull.assignees.length
+    ? pull.assignees.map(esc).join(", ")
+    : "—";
+  const reviewers = pull.reviewers && pull.reviewers.length
+    ? pull.reviewers.map(esc).join(", ")
+    : "—";
+  const labels = pull.labels && pull.labels.length ? labelBadges(pull.labels) : "—";
+  const mergedDate = pull.merged_at ? shortDate(pull.merged_at) : null;
+  const closedDate = pull.closed_at && !pull.merged_at ? shortDate(pull.closed_at) : null;
+  const statsId = `pull-stats-${pull.number}`;
+
+  return `
+    <div class="detail-content">
+      <div class="detail-header">
+        <span class="detail-type-badge">PR #${pull.number}</span>
+        ${stateBadge(pull.state)}
+        ${pull.draft ? '<span class="badge badge-draft">draft</span>' : ""}
+        <button class="detail-close-btn" onclick="collapseAllRows()" title="Close">×</button>
+      </div>
+      <div class="detail-body-text markdown-body">${renderMarkdown(pull.body)}</div>
+      <div class="detail-meta-grid">
+        <div class="detail-meta-item">
+          <span class="detail-meta-label">Author</span>
+          <span>${esc(pull.author)}</span>
+        </div>
+        <div class="detail-meta-item">
+          <span class="detail-meta-label">Assignees</span>
+          <span>${assignees}</span>
+        </div>
+        <div class="detail-meta-item">
+          <span class="detail-meta-label">Reviewers</span>
+          <span>${reviewers}</span>
+        </div>
+        <div class="detail-meta-item">
+          <span class="detail-meta-label">Labels</span>
+          <span>${labels}</span>
+        </div>
+        <div class="detail-meta-item">
+          <span class="detail-meta-label">Head → Base</span>
+          <span>${esc(pull.head_branch)} → ${esc(pull.base_branch)}</span>
+        </div>
+        <div class="detail-meta-item">
+          <span class="detail-meta-label">Created</span>
+          <span>${shortDate(pull.created_at)}</span>
+        </div>
+        <div class="detail-meta-item">
+          <span class="detail-meta-label">Updated</span>
+          <span>${shortDate(pull.updated_at)}</span>
+        </div>
+        ${mergedDate ? `
+        <div class="detail-meta-item">
+          <span class="detail-meta-label">Merged</span>
+          <span>${mergedDate}</span>
+        </div>` : ""}
+        ${closedDate ? `
+        <div class="detail-meta-item">
+          <span class="detail-meta-label">Closed</span>
+          <span>${closedDate}</span>
+        </div>` : ""}
+      </div>
+      <div id="${statsId}" class="detail-pr-stats">
+        <div class="detail-pr-stats-loading">
+          <span class="spinner-small"></span> Loading diff stats…
+        </div>
+      </div>
+      <div class="detail-footer">
+        <a href="${esc(pull.html_url)}" target="_blank" rel="noopener noreferrer" class="detail-open-link">Open on GitHub ↗</a>
+      </div>
+    </div>`;
+}
+
+function buildAlertDetail(alert) {
+  const normalizedSev = normalizeSeverity(alert.severity, alert.alert_type);
+  const sevClass = normalizedSev === "critical" ? "severity-critical"
+                 : normalizedSev === "high"     ? "severity-high"
+                 : normalizedSev === "medium"   ? "severity-medium"
+                 :                               "severity-low";
+  const cvss = alert.cvss_score != null
+    ? `<span class="detail-cvss-score">${alert.cvss_score.toFixed(1)}</span>`
+    : "—";
+  const cve = alert.cve_id ? esc(alert.cve_id) : "—";
+  const cwes = alert.cwes && alert.cwes.length ? alert.cwes.map(esc).join(", ") : "—";
+  const location = alert.location_path ? esc(alert.location_path) : null;
+  const tool = alert.tool_name ? esc(alert.tool_name) : null;
+  const typeLabel = alert.alert_type === "code_scanning"
+    ? `Code Scanning${tool ? ` (${tool})` : ""}`
+    : "Dependabot";
+  const dismissedReason = alert.dismissed_reason ? esc(alert.dismissed_reason) : null;
+  const dismissedComment = alert.dismissed_comment ? esc(alert.dismissed_comment) : null;
+
+  return `
+    <div class="detail-content">
+      <div class="detail-header">
+        <span class="detail-type-badge">${typeLabel} #${alert.id}</span>
+        <span class="badge badge-severity ${sevClass}">${esc(alert.severity)}</span>
+        <button class="detail-close-btn" onclick="collapseAllRows()" title="Close">×</button>
+      </div>
+      <div class="detail-body-text detail-advisory-description">${esc(alert.description) || '<em class="detail-no-body">No advisory description available.</em>'}</div>
+      <div class="detail-meta-grid">
+        <div class="detail-meta-item">
+          <span class="detail-meta-label">CVE ID</span>
+          <span>${cve}</span>
+        </div>
+        <div class="detail-meta-item">
+          <span class="detail-meta-label">CVSS Score</span>
+          <span>${cvss}</span>
+        </div>
+        <div class="detail-meta-item">
+          <span class="detail-meta-label">CWEs</span>
+          <span>${cwes}</span>
+        </div>
+        <div class="detail-meta-item">
+          <span class="detail-meta-label">Package</span>
+          <span>${esc(alert.package_name || "—")}</span>
+        </div>
+        <div class="detail-meta-item">
+          <span class="detail-meta-label">Vulnerable</span>
+          <span>${esc(alert.vulnerable_version_range || "—")}</span>
+        </div>
+        <div class="detail-meta-item">
+          <span class="detail-meta-label">Patched</span>
+          <span>${esc(alert.patched_version || "—")}</span>
+        </div>
+        <div class="detail-meta-item">
+          <span class="detail-meta-label">State</span>
+          <span>${esc(alert.state)}</span>
+        </div>
+        <div class="detail-meta-item">
+          <span class="detail-meta-label">Created</span>
+          <span>${shortDate(alert.created_at)}</span>
+        </div>
+        ${location ? `
+        <div class="detail-meta-item detail-meta-full">
+          <span class="detail-meta-label">Location</span>
+          <code>${location}</code>
+        </div>` : ""}
+        ${dismissedReason ? `
+        <div class="detail-meta-item">
+          <span class="detail-meta-label">Dismissed Reason</span>
+          <span>${dismissedReason}</span>
+        </div>` : ""}
+        ${dismissedComment ? `
+        <div class="detail-meta-item detail-meta-full">
+          <span class="detail-meta-label">Dismissed Comment</span>
+          <span>${dismissedComment}</span>
+        </div>` : ""}
+      </div>
+      <div class="detail-footer">
+        <a href="${esc(alert.html_url)}" target="_blank" rel="noopener noreferrer" class="detail-open-link">Open on GitHub ↗</a>
+      </div>
+    </div>`;
 }

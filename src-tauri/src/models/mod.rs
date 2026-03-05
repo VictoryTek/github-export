@@ -42,6 +42,8 @@ pub struct Issue {
     pub closed_at: Option<DateTime<Utc>>,
     pub html_url: String,
     pub body: Option<String>,
+    pub comments: u32,
+    pub milestone: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -51,6 +53,7 @@ pub struct PullRequest {
     pub state: String,
     pub author: String,
     pub labels: Vec<String>,
+    pub assignees: Vec<String>,
     pub reviewers: Vec<String>,
     pub head_branch: String,
     pub base_branch: String,
@@ -75,6 +78,28 @@ pub struct SecurityAlert {
     pub state: String,
     pub html_url: String,
     pub created_at: DateTime<Utc>,
+    pub alert_type: String,
+    pub tool_name: Option<String>,
+    pub location_path: Option<String>,
+    pub cve_id: Option<String>,
+    pub cvss_score: Option<f64>,
+    pub cwes: Vec<String>,
+    pub dismissed_reason: Option<String>,
+    pub dismissed_comment: Option<String>,
+}
+
+// ──────────────────────────────────────────────
+// Pull request detail (diff stats — from individual PR endpoint)
+// ──────────────────────────────────────────────
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PullDetail {
+    pub number: u64,
+    pub additions: u64,
+    pub deletions: u64,
+    pub changed_files: u64,
+    pub mergeable: Option<bool>,
+    pub mergeable_state: Option<String>,
 }
 
 // ──────────────────────────────────────────────

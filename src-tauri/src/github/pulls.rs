@@ -77,6 +77,12 @@ pub async fn fetch_pulls(
                 .iter()
                 .map(|l| l.name.clone())
                 .collect(),
+            assignees: pr
+                .assignees
+                .unwrap_or_default()
+                .iter()
+                .map(|a| a.login.clone())
+                .collect(),
             reviewers: pr
                 .requested_reviewers
                 .unwrap_or_default()

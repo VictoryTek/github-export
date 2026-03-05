@@ -15,6 +15,9 @@ src-tauri/WixTools/
 *.msi
 *.exe
 
+# Dev References
+analysis/
+
 # Environment / secrets
 .env
 .env.*
@@ -25,11 +28,7 @@ src-tauri/WixTools/
 Thumbs.db
 
 # Screenshots
-*.png
-*.jpg
-*.jpeg
-*.gif
-*.webp
+# analysis/screenshots/
 
 # IDE / editor
 .vscode/settings.json

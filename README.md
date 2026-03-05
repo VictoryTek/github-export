@@ -10,7 +10,8 @@ A cross-platform desktop application for managing **GitHub issues**, **pull requ
 
 | Feature | Status |
 |---|---|
-| Authenticate via Personal Access Token (PAT) | ✅ |
+| Authenticate via GitHub OAuth (Device Flow) | ✅ |
+| Authenticate via Personal Access Token (PAT) — fallback | ✅ |
 | Persistent credential storage (OS keyring) | ✅ |
 | List repositories for the authenticated user | ✅ |
 | View issues with state, labels, assignees | ✅ |
@@ -55,7 +56,11 @@ _Coming soon — run `npm run dev` to see the app in action._
    - **Ubuntu/Debian**: `sudo apt install libwebkit2gtk-4.0-dev build-essential curl wget file libssl-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev`
    - **Fedora**: `sudo dnf install webkit2gtk4.0-devel openssl-devel gtk3-devel libappindicator-gtk3-devel librsvg2-devel`
    - **Arch**: `sudo pacman -S webkit2gtk base-devel openssl gtk3 libappindicator-gtk3 librsvg2`
-4. **GitHub PAT** with `repo` + `security_events` scopes: <https://github.com/settings/tokens>
+4. **GitHub OAuth App** with Device Flow enabled:
+   - Register an OAuth App at <https://github.com/settings/developers> → "OAuth Apps" → "New OAuth App"
+   - Copy the **Client ID** into `src-tauri/src/github/auth.rs` (`GITHUB_CLIENT_ID`)
+   - Enable **Device Flow** on the same settings page (disabled by default — required for this app)
+   - _Alternatively_, use a **PAT** with `repo` + `security_events` scopes: <https://github.com/settings/tokens>
 
 For **PDF export**, place the Liberation Sans font files next to the compiled binary:
 - `LiberationSans-Regular.ttf`
@@ -108,7 +113,7 @@ github-export/
 │       │   └── mod.rs            # Data types (Issue, PR, Alert, …)
 │       ├── github/
 │       │   ├── mod.rs
-│       │   ├── auth.rs           # PAT authentication, keyring ops
+│       │   ├── auth.rs           # OAuth Device Flow, PAT fallback, keyring ops
 │       │   ├── issues.rs         # Fetch repos & issues
 │       │   ├── pulls.rs          # Fetch pull requests
 │       │   └── security.rs       # Fetch Dependabot alerts

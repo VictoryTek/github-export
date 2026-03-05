@@ -9,7 +9,7 @@ mod models;
 #[cfg(feature = "dev-mock")]
 mod mock;
 
-use github::auth::{start_device_flow, poll_device_flow};
+use github::auth::{authenticate_with_pat, poll_device_flow, start_device_flow};
 #[cfg(not(feature = "dev-mock"))]
 use models::FilterParams;
 use models::{AppState, ExportFormat};
@@ -129,13 +129,32 @@ async fn fetch_pulls(
 async fn fetch_security_alerts(
     owner: String,
     repo: String,
-    state: State<'_, Mutex<AppState>>,
+    state: Option<String>,
+    app_state: State<'_, Mutex<AppState>>,
 ) -> Result<Vec<models::SecurityAlert>, String> {
+    let client = {
+        let app = app_state.lock().map_err(|e| e.to_string())?;
+        app.client.clone().ok_or("Not authenticated")?
+    };
+    github::security::fetch_alerts(&client, &owner, &repo, state.as_deref())
+        .await
+        .map_err(|e| e.to_string())
+}
+
+/// Fetch detailed diff statistics for a single pull request.
+#[cfg(not(feature = "dev-mock"))]
+#[tauri::command]
+async fn get_pull_detail(
+    owner: String,
+    repo: String,
+    pull_number: u64,
+    state: State<'_, Mutex<AppState>>,
+) -> Result<models::PullDetail, String> {
     let client = {
         let app = state.lock().map_err(|e| e.to_string())?;
         app.client.clone().ok_or("Not authenticated")?
     };
-    github::security::fetch_alerts(&client, &owner, &repo)
+    github::detail::fetch_pull_detail(&client, &owner, &repo, pull_number)
         .await
         .map_err(|e| e.to_string())
 }
@@ -175,12 +194,14 @@ fn main() {
         get_dev_mode,
         start_device_flow,
         poll_device_flow,
+        authenticate_with_pat,
         restore_session,
         logout,
         list_repos,
         fetch_issues,
         fetch_pulls,
         fetch_security_alerts,
+        get_pull_detail,
         export_data,
     ]);
 
@@ -194,8 +215,10 @@ fn main() {
         mock::fetch_security_alerts,
         start_device_flow,
         poll_device_flow,
+        authenticate_with_pat,
         logout,
         export_data,
+        mock::get_pull_detail,
     ]);
 
     builder
