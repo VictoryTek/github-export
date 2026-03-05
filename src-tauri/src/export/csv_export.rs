@@ -60,7 +60,13 @@ pub fn export_to_csv(
     if !alerts.is_empty() {
         wtr.write_record(["[Security Alerts]", "", "", "", "", "", ""])?;
         wtr.write_record([
-            "ID", "Severity", "Summary", "Package", "Vulnerable Range", "Patched", "URL",
+            "ID",
+            "Severity",
+            "Summary",
+            "Package",
+            "Vulnerable Range",
+            "Patched",
+            "URL",
         ])?;
         for a in alerts {
             wtr.write_record([

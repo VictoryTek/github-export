@@ -23,12 +23,11 @@ pub fn export_to_pdf(
         .and_then(|p| p.parent().map(|d| d.to_path_buf()))
         .unwrap_or_else(|| std::path::PathBuf::from("."));
 
-    let font_family = genpdf::fonts::from_files(&font_dir, FONT_FAMILY, None)
-        .context(
-            "Could not load LiberationSans fonts. Place LiberationSans-Regular.ttf, \
+    let font_family = genpdf::fonts::from_files(&font_dir, FONT_FAMILY, None).context(
+        "Could not load LiberationSans fonts. Place LiberationSans-Regular.ttf, \
              LiberationSans-Bold.ttf, LiberationSans-Italic.ttf, and \
              LiberationSans-BoldItalic.ttf next to the executable.",
-        )?;
+    )?;
 
     let mut doc = Document::new(font_family);
     doc.set_title("GitHub Export Report");
@@ -38,10 +37,7 @@ pub fn export_to_pdf(
     doc.set_page_decorator(decorator);
 
     // ── Title ───────────────────────────────
-    doc.push(
-        Paragraph::new("GitHub Export Report")
-            .styled(Style::new().bold().with_font_size(20)),
-    );
+    doc.push(Paragraph::new("GitHub Export Report").styled(Style::new().bold().with_font_size(20)));
     doc.push(Break::new(1));
 
     // ── Issues ──────────────────────────────
@@ -54,12 +50,7 @@ pub fn export_to_pdf(
         for i in issues {
             push_table_row(
                 &mut table,
-                &[
-                    &i.number.to_string(),
-                    &i.title,
-                    &i.state,
-                    &i.author,
-                ],
+                &[&i.number.to_string(), &i.title, &i.state, &i.author],
             );
         }
         doc.push(table);
@@ -75,12 +66,7 @@ pub fn export_to_pdf(
         for pr in pulls {
             push_table_row(
                 &mut table,
-                &[
-                    &pr.number.to_string(),
-                    &pr.title,
-                    &pr.state,
-                    &pr.author,
-                ],
+                &[&pr.number.to_string(), &pr.title, &pr.state, &pr.author],
             );
         }
         doc.push(table);

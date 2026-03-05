@@ -739,3 +739,143 @@ tbody tr:hover { background: rgba(88,166,255,0.06); }
 
 .badge-draft    { background: rgba(139,148,158,0.2); color: var(--text-muted); }
 .badge-severity { font-weight: 700; }
+
+/* ── Multi-account switcher ──────────────────── */
+
+.sidebar-header {
+  position: relative;
+}
+
+.account-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+
+.account-username {
+  font-weight: 600;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account-menu-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  padding: 2px 4px;
+  border-radius: var(--radius);
+  flex-shrink: 0;
+  transition: color 0.15s;
+}
+
+.account-menu-btn:hover { color: var(--text); }
+
+.account-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  z-index: 100;
+  min-width: 200px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.account-menu-section-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  padding: 8px 12px 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.account-switcher-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.account-switcher-item {
+  padding: 8px 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+}
+
+.account-switcher-item:hover { background: rgba(255, 255, 255, 0.06); }
+
+.account-active { font-weight: 600; cursor: default; }
+
+.account-active-dot {
+  color: var(--green);
+  font-size: 10px;
+  margin-left: auto;
+}
+
+.account-item-label {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.account-menu-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 4px 0;
+}
+
+.account-menu-action {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 8px 12px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text);
+  font-size: 0.85rem;
+}
+
+.account-menu-action:hover { background: rgba(255, 255, 255, 0.06); }
+.account-menu-danger { color: var(--red); }
+
+/* ── Add Account modal ───────────────────────── */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+}
+
+.modal-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  width: 400px;
+  max-width: 90vw;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.modal-title  { margin: 0; font-size: 1.1rem; }
+.modal-subtitle { margin: 0; color: var(--text-muted); font-size: 13px; line-height: 1.5; }
+
+.modal-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+}

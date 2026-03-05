@@ -23,6 +23,7 @@ reqwest = { version = "0.12", features = ["json"] }
 keyring = { version = "3", features = ["apple-native", "windows-native", "sync-secret-service"] }
 thiserror = "1"
 anyhow = "1"
+uuid = { version = "1", features = ["v4"] }
 
 [features]
 default = ["custom-protocol"]

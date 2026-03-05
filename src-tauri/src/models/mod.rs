@@ -3,6 +3,37 @@ use octocrab::Octocrab;
 use serde::{Deserialize, Serialize};
 
 // ──────────────────────────────────────────────
+// Multi-account types
+// ──────────────────────────────────────────────
+
+/// A single stored GitHub account (PAT or OAuth token).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Account {
+    /// Stable unique identifier (UUID v4).
+    pub id: String,
+    /// User-visible display name.
+    pub label: String,
+    /// Resolved GitHub username at the time the account was added.
+    pub username: String,
+}
+
+/// Serialisable view of an account returned to the frontend.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AccountInfo {
+    pub id: String,
+    pub label: String,
+    pub username: String,
+    pub is_active: bool,
+}
+
+/// Returned by `restore_session` when a session is successfully restored.
+#[derive(Debug, Serialize, Deserialize)]
+pub struct RestoreResult {
+    pub username: String,
+    pub accounts: Vec<AccountInfo>,
+}
+
+// ──────────────────────────────────────────────
 // Application state
 // ──────────────────────────────────────────────
 
@@ -11,6 +42,10 @@ pub struct AppState {
     pub client: Option<Octocrab>,
     pub token: Option<String>,
     pub username: Option<String>,
+    /// The id of the currently active account.
+    pub active_account_id: Option<String>,
+    /// All known accounts (metadata only — tokens stay in the keyring).
+    pub accounts: Vec<Account>,
 }
 
 // ──────────────────────────────────────────────

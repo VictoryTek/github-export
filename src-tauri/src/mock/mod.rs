@@ -23,9 +23,7 @@ fn dt(rfc3339: &str) -> DateTime<chrono::Utc> {
 
 /// Auto-login as "octocat" — bypasses the GitHub OAuth flow entirely.
 #[tauri::command]
-pub fn restore_session(
-    state: tauri::State<'_, Mutex<AppState>>,
-) -> Result<Option<String>, String> {
+pub fn restore_session(state: tauri::State<'_, Mutex<AppState>>) -> Result<Option<String>, String> {
     let mut s = state.lock().map_err(|e| e.to_string())?;
     s.token = Some("mock-token-dev".to_string());
     s.username = Some("octocat".to_string());
@@ -34,9 +32,7 @@ pub fn restore_session(
 
 /// Returns three realistic fake repositories.
 #[tauri::command]
-pub fn list_repos(
-    _state: tauri::State<'_, Mutex<AppState>>,
-) -> Result<Vec<Repo>, String> {
+pub fn list_repos(_state: tauri::State<'_, Mutex<AppState>>) -> Result<Vec<Repo>, String> {
     Ok(vec![
         Repo {
             id: 1_296_269,
@@ -53,9 +49,7 @@ pub fn list_repos(
             name: "Spoon-Knife".to_string(),
             full_name: "octocat/Spoon-Knife".to_string(),
             owner: "octocat".to_string(),
-            description: Some(
-                "This repo is for demonstration purposes only.".to_string(),
-            ),
+            description: Some("This repo is for demonstration purposes only.".to_string()),
             private: false,
             html_url: "https://github.com/octocat/Spoon-Knife".to_string(),
             open_issues_count: 1_843,
@@ -97,8 +91,7 @@ pub fn fetch_issues(
             closed_at: None,
             html_url: "https://github.com/octocat/Hello-World/issues/42".to_string(),
             body: Some(
-                "Observed a null pointer dereference when the auth token is expired."
-                    .to_string(),
+                "Observed a null pointer dereference when the auth token is expired.".to_string(),
             ),
             comments: 7,
             milestone: Some("v2.0".to_string()),
@@ -114,7 +107,9 @@ pub fn fetch_issues(
             updated_at: dt("2025-12-10T08:45:00Z"),
             closed_at: None,
             html_url: "https://github.com/octocat/Hello-World/issues/57".to_string(),
-            body: Some("Users have requested a dark mode toggle in the settings panel.".to_string()),
+            body: Some(
+                "Users have requested a dark mode toggle in the settings panel.".to_string(),
+            ),
             comments: 3,
             milestone: None,
         },
@@ -161,7 +156,10 @@ pub fn fetch_issues(
             updated_at: dt("2026-02-14T17:00:00Z"),
             closed_at: None,
             html_url: "https://github.com/octocat/Hello-World/issues/78".to_string(),
-            body: Some("When exporting issues to CSV the assignees column is empty for all rows.".to_string()),
+            body: Some(
+                "When exporting issues to CSV the assignees column is empty for all rows."
+                    .to_string(),
+            ),
             comments: 1,
             milestone: None,
         },
@@ -255,8 +253,7 @@ pub fn fetch_security_alerts(
             vulnerable_version_range: Some("< 4.17.21".to_string()),
             patched_version: Some("4.17.21".to_string()),
             state: "open".to_string(),
-            html_url: "https://github.com/octocat/Hello-World/security/dependabot/1"
-                .to_string(),
+            html_url: "https://github.com/octocat/Hello-World/security/dependabot/1".to_string(),
             created_at: dt("2025-09-15T12:00:00Z"),
             alert_type: "dependabot".to_string(),
             tool_name: None,
@@ -278,8 +275,7 @@ pub fn fetch_security_alerts(
             vulnerable_version_range: Some("< 1.15.6".to_string()),
             patched_version: Some("1.15.6".to_string()),
             state: "open".to_string(),
-            html_url: "https://github.com/octocat/Hello-World/security/dependabot/2"
-                .to_string(),
+            html_url: "https://github.com/octocat/Hello-World/security/dependabot/2".to_string(),
             created_at: dt("2026-01-10T08:30:00Z"),
             alert_type: "dependabot".to_string(),
             tool_name: None,
@@ -300,8 +296,7 @@ pub fn fetch_security_alerts(
             vulnerable_version_range: None,
             patched_version: None,
             state: "open".to_string(),
-            html_url: "https://github.com/octocat/Hello-World/security/code-scanning/3"
-                .to_string(),
+            html_url: "https://github.com/octocat/Hello-World/security/code-scanning/3".to_string(),
             created_at: dt("2026-02-20T10:00:00Z"),
             alert_type: "code_scanning".to_string(),
             tool_name: Some("CodeQL".to_string()),
@@ -327,7 +322,7 @@ pub fn get_pull_detail(
         101 => (320u64, 85u64, 12u64, Some(false)),
         115 => (47u64, 9u64, 3u64, Some(true)),
         122 => (128u64, 44u64, 8u64, Some(false)),
-        _   => (10u64, 2u64, 1u64, Some(true)),
+        _ => (10u64, 2u64, 1u64, Some(true)),
     };
     Ok(PullDetail {
         number: pull_number,

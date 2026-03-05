@@ -5,11 +5,14 @@
 
 mod export;
 mod github;
-mod models;
 #[cfg(feature = "dev-mock")]
 mod mock;
+mod models;
 
-use github::auth::{authenticate_with_pat, poll_device_flow, start_device_flow};
+use github::auth::{
+    add_account, authenticate_with_pat, delete_active_account_id, list_accounts, poll_device_flow,
+    remove_account, restore_session, start_device_flow, switch_account,
+};
 #[cfg(not(feature = "dev-mock"))]
 use models::FilterParams;
 use models::{AppState, ExportFormat};
@@ -30,54 +33,22 @@ fn get_dev_mode() -> bool {
 // Tauri commands exposed to the frontend
 // ──────────────────────────────────────────────
 
-/// Try to restore a previously saved token from the OS keyring.
-#[cfg(not(feature = "dev-mock"))]
-#[tauri::command]
-async fn restore_session(
-    state: State<'_, Mutex<AppState>>,
-) -> Result<Option<String>, String> {
-    match github::auth::load_token() {
-        Ok(token) => {
-            let client = github::auth::authenticate_with_token(&token)
-                .await
-                .map_err(|e| e.to_string())?;
-
-            let user = client
-                .current()
-                .user()
-                .await
-                .map_err(|e| format!("Failed to fetch user: {e}"))?;
-
-            let username = user.login.clone();
-
-            let mut app = state.lock().map_err(|e| e.to_string())?;
-            app.client = Some(client);
-            app.token = Some(token);
-            app.username = Some(username.clone());
-
-            Ok(Some(username))
-        }
-        Err(_) => Ok(None),
-    }
-}
-
-/// Logout – clear state and remove stored token.
+/// Disconnect the current session without removing stored accounts.
 #[tauri::command]
 fn logout(state: State<'_, Mutex<AppState>>) -> Result<(), String> {
     let mut app = state.lock().map_err(|e| e.to_string())?;
     app.client = None;
     app.token = None;
     app.username = None;
-    let _ = github::auth::delete_token();
+    app.active_account_id = None;
+    let _ = delete_active_account_id();
     Ok(())
 }
 
 /// List repositories visible to the authenticated user.
 #[cfg(not(feature = "dev-mock"))]
 #[tauri::command]
-async fn list_repos(
-    state: State<'_, Mutex<AppState>>,
-) -> Result<Vec<models::Repo>, String> {
+async fn list_repos(state: State<'_, Mutex<AppState>>) -> Result<Vec<models::Repo>, String> {
     let client = {
         let app = state.lock().map_err(|e| e.to_string())?;
         app.client.clone().ok_or("Not authenticated")?
@@ -186,8 +157,7 @@ async fn export_data(
 // ──────────────────────────────────────────────
 
 fn main() {
-    let builder = tauri::Builder::default()
-        .manage(Mutex::new(AppState::default()));
+    let builder = tauri::Builder::default().manage(Mutex::new(AppState::default()));
 
     #[cfg(not(feature = "dev-mock"))]
     let builder = builder.invoke_handler(tauri::generate_handler![
@@ -196,6 +166,10 @@ fn main() {
         poll_device_flow,
         authenticate_with_pat,
         restore_session,
+        list_accounts,
+        add_account,
+        switch_account,
+        remove_account,
         logout,
         list_repos,
         fetch_issues,

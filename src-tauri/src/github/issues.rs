@@ -52,10 +52,7 @@ pub async fn fetch_issues(
     let mut builder = issues_handler.list();
 
     // Pre-compute label vec outside the if-let so it lives long enough
-    let label_vec: Vec<String> = filters
-        .and_then(|f| f.label.clone())
-        .into_iter()
-        .collect();
+    let label_vec: Vec<String> = filters.and_then(|f| f.label.clone()).into_iter().collect();
 
     if let Some(f) = filters {
         // State filter
@@ -101,10 +98,7 @@ pub async fn fetch_issues(
         }
     }
 
-    let mut page = builder
-        .send()
-        .await
-        .context("Failed to fetch issues")?;
+    let mut page = builder.send().await.context("Failed to fetch issues")?;
 
     let issues = page
         .take_items()
@@ -117,11 +111,7 @@ pub async fn fetch_issues(
             state: format!("{:?}", i.state),
             author: i.user.login.clone(),
             labels: i.labels.iter().map(|l| l.name.clone()).collect(),
-            assignees: i
-                .assignees
-                .iter()
-                .map(|a| a.login.clone())
-                .collect(),
+            assignees: i.assignees.iter().map(|a| a.login.clone()).collect(),
             created_at: i.created_at,
             updated_at: i.updated_at,
             closed_at: i.closed_at,

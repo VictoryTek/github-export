@@ -70,7 +70,11 @@ pub async fn fetch_pulls(
                 .as_ref()
                 .map(|s| format!("{:?}", s))
                 .unwrap_or_else(|| "unknown".to_string()),
-            author: pr.user.as_ref().map(|u| u.login.clone()).unwrap_or_default(),
+            author: pr
+                .user
+                .as_ref()
+                .map(|u| u.login.clone())
+                .unwrap_or_default(),
             labels: pr
                 .labels
                 .unwrap_or_default()
@@ -89,16 +93,8 @@ pub async fn fetch_pulls(
                 .iter()
                 .map(|r| r.login.clone())
                 .collect(),
-            head_branch: pr
-                .head
-                .label
-                .clone()
-                .unwrap_or_default(),
-            base_branch: pr
-                .base
-                .label
-                .clone()
-                .unwrap_or_default(),
+            head_branch: pr.head.label.clone().unwrap_or_default(),
+            base_branch: pr.base.label.clone().unwrap_or_default(),
             created_at: pr.created_at.unwrap_or_default(),
             updated_at: pr.updated_at.unwrap_or_default(),
             merged_at: pr.merged_at,

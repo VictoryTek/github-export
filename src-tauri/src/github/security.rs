@@ -119,8 +119,7 @@ pub async fn fetch_alerts(
                     .and_then(|ad| ad.description.clone())
                     .unwrap_or_default(),
                 package_name: vuln.and_then(|v| v.package.as_ref().and_then(|p| p.name.clone())),
-                vulnerable_version_range: vuln
-                    .and_then(|v| v.vulnerable_version_range.clone()),
+                vulnerable_version_range: vuln.and_then(|v| v.vulnerable_version_range.clone()),
                 patched_version: vuln.and_then(|v| {
                     v.first_patched_version
                         .as_ref()
@@ -128,10 +127,7 @@ pub async fn fetch_alerts(
                 }),
                 state: a.state,
                 html_url: a.html_url,
-                created_at: a
-                    .created_at
-                    .parse()
-                    .unwrap_or_else(|_| chrono::Utc::now()),
+                created_at: a.created_at.parse().unwrap_or_else(|_| chrono::Utc::now()),
                 alert_type: "dependabot".to_string(),
                 tool_name: None,
                 location_path: None,
@@ -205,9 +201,10 @@ async fn fetch_code_scanning_alerts(
         Ok(alerts) => Ok(alerts
             .into_iter()
             .map(|a| {
-                let summary = a.rule.description.clone().unwrap_or_else(|| {
-                    a.rule.id.clone().unwrap_or_else(|| "Unknown".to_string())
-                });
+                let summary =
+                    a.rule.description.clone().unwrap_or_else(|| {
+                        a.rule.id.clone().unwrap_or_else(|| "Unknown".to_string())
+                    });
                 SecurityAlert {
                     id: a.number,
                     severity: a.rule.severity.unwrap_or_else(|| "unknown".to_string()),

@@ -68,8 +68,22 @@
     <!-- Sidebar -->
     <aside id="sidebar">
       <div class="sidebar-header">
-        <span id="username"></span>
-        <button id="logout-btn" title="Logout">⎋</button>
+        <!-- Active account chip -->
+        <div id="account-chip" class="account-chip">
+          <span id="username" class="account-username"></span>
+          <button id="account-menu-btn" class="account-menu-btn" title="Manage accounts" aria-haspopup="true" aria-expanded="false">▾</button>
+        </div>
+
+        <!-- Account dropdown menu (hidden by default) -->
+        <div id="account-menu" class="account-menu hidden" role="menu">
+          <div class="account-menu-section-label">Switch account</div>
+          <ul id="account-list" class="account-switcher-list"></ul>
+          <div class="account-menu-divider"></div>
+          <button id="add-account-btn" class="account-menu-action" role="menuitem">+ Add account</button>
+          <button id="remove-account-btn" class="account-menu-action account-menu-danger" role="menuitem">Remove this account</button>
+          <div class="account-menu-divider"></div>
+          <button id="logout-btn" class="account-menu-action" role="menuitem" title="Disconnect (keep account saved)">Disconnect</button>
+        </div>
       </div>
       <h3>Repositories</h3>
       <input id="repo-search" type="text" placeholder="Filter repos…" />
@@ -145,6 +159,21 @@
       <div id="loading" class="hidden">Loading…</div>
     </main>
   </section>
+
+  <!-- Add Account modal overlay -->
+  <div id="add-account-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="add-account-title">
+    <div class="modal-card">
+      <h2 id="add-account-title" class="modal-title">Add GitHub Account</h2>
+      <p class="modal-subtitle">Enter a Personal Access Token with <code>repo</code> and <code>security_events</code> scopes.</p>
+      <input id="add-account-label" type="text" placeholder="Display name (optional)" class="pat-input" autocomplete="off" />
+      <input id="add-account-token" type="password" placeholder="ghp_… or github_pat_…" class="pat-input" autocomplete="off" spellcheck="false" />
+      <div id="add-account-error" class="login-error hidden"></div>
+      <div class="modal-actions">
+        <button id="add-account-submit-btn" class="btn-github-signin">Add Account</button>
+        <button id="add-account-cancel-btn" class="btn-cancel">Cancel</button>
+      </div>
+    </div>
+  </div>
 
   <script src="vendor/marked.min.js"></script>
   <script src="vendor/purify.min.js"></script>

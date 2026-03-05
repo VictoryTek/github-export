@@ -29,8 +29,8 @@ let pulls     = [];
 let alerts    = [];
 let activeTab = "issues";
 let selectedRepo = null;   // { owner, name }
-let expandedRow  = null;   // { type: "issues"|"pulls"|"alerts", idx: number } | null
-
+let expandedRow  = null;   // { type: "issues"|"pulls"|"alerts", idx: number } | nulllet accounts        = [];  // AccountInfo[] — mirrors backend accounts list
+let activeAccountId = null; // String — currently active account id
 // ── Boot ────────────────────────────────────────
 window.addEventListener("error", (e) => {
   document.getElementById("login-error").textContent = "JS error: " + e.message;
@@ -69,8 +69,12 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // Normal mode: try to restore a saved session from the OS keyring
   try {
-    const user = await invoke("restore_session");
-    if (user) await showApp(user);
+    const result = await invoke("restore_session");
+    if (result) {
+      accounts = result.accounts;
+      activeAccountId = accounts.find(a => a.is_active)?.id ?? null;
+      await showApp(result.username);
+    }
   } catch (_) { /* no stored session — stay on login screen */ }
 });
 
@@ -114,7 +118,9 @@ document.getElementById('signin-btn').addEventListener('click', async () => {
           interval: flow.interval,
         });
 
-        // Success — transition to main app
+        // Success — refresh accounts and transition to main app
+        accounts = await invoke('list_accounts');
+        activeAccountId = accounts.find(a => a.is_active)?.id ?? null;
         await showApp(username);
       } catch (err) {
         loginError.textContent = String(err);
@@ -140,7 +146,9 @@ document.getElementById('pat-submit-btn').addEventListener('click', async () => 
   document.getElementById('pat-submit-btn').disabled = true;
   loginError.classList.add('hidden');
   try {
-    const username = await invoke('authenticate_with_pat', { token });
+    const username = await invoke('authenticate_with_pat', { token, label: null });
+    accounts = await invoke('list_accounts');
+    activeAccountId = accounts.find(a => a.is_active)?.id ?? null;
     await showApp(username);
   } catch (err) {
     loginError.textContent = 'PAT sign-in failed: ' + String(err);
@@ -151,6 +159,8 @@ document.getElementById('pat-submit-btn').addEventListener('click', async () => 
 
 logoutBtn.addEventListener("click", async () => {
   await invoke("logout");
+  accounts = [];
+  activeAccountId = null;
   loginScreen.classList.remove("hidden");
   appScreen.classList.add("hidden");
   document.getElementById('pat-input').value = '';
@@ -162,10 +172,127 @@ logoutBtn.addEventListener("click", async () => {
 
 async function showApp(username) {
   usernameEl.textContent = `@${username}`;
+  renderAccountSwitcher();
   loginScreen.classList.add("hidden");
   appScreen.classList.remove("hidden");
   await loadRepos();
 }
+
+// ── Account Switcher ────────────────────────────────
+function renderAccountSwitcher() {
+  const list = document.getElementById("account-list");
+  if (!list) return;
+  list.innerHTML = "";
+  accounts.forEach((acct) => {
+    const li = document.createElement("li");
+    li.className = "account-switcher-item" + (acct.is_active ? " account-active" : "");
+    li.setAttribute("role", "menuitem");
+    li.innerHTML = `
+      <span class="account-item-username">@${esc(acct.username)}</span>
+      <span class="account-item-label">${esc(acct.label)}</span>
+      ${acct.is_active ? '<span class="account-active-dot" aria-label="Active">●</span>' : ""}
+    `;
+    if (!acct.is_active) {
+      li.addEventListener("click", () => handleSwitchAccount(acct.id));
+    }
+    list.appendChild(li);
+  });
+}
+
+document.getElementById("account-menu-btn").addEventListener("click", (e) => {
+  e.stopPropagation();
+  const menu = document.getElementById("account-menu");
+  const btn  = document.getElementById("account-menu-btn");
+  const isOpen = !menu.classList.contains("hidden");
+  menu.classList.toggle("hidden", isOpen);
+  btn.setAttribute("aria-expanded", String(!isOpen));
+});
+
+document.addEventListener("click", () => {
+  document.getElementById("account-menu")?.classList.add("hidden");
+  document.getElementById("account-menu-btn")?.setAttribute("aria-expanded", "false");
+});
+
+async function handleSwitchAccount(accountId) {
+  document.getElementById("account-menu").classList.add("hidden");
+  try {
+    const username = await invoke("switch_account", { accountId });
+    accounts = await invoke("list_accounts");
+    activeAccountId = accountId;
+    usernameEl.textContent = `@${username}`;
+    renderAccountSwitcher();
+    selectedRepo = null;
+    repos = [];
+    issues = [];
+    pulls = [];
+    alerts = [];
+    repoList.innerHTML = "";
+    placeholder.classList.remove("hidden");
+    await loadRepos();
+  } catch (err) {
+    alert(`Failed to switch account: ${err}`);
+  }
+}
+
+document.getElementById("add-account-btn").addEventListener("click", () => {
+  document.getElementById("account-menu").classList.add("hidden");
+  document.getElementById("add-account-modal").classList.remove("hidden");
+  document.getElementById("add-account-token").value = "";
+  document.getElementById("add-account-label").value = "";
+  document.getElementById("add-account-error").classList.add("hidden");
+  document.getElementById("add-account-submit-btn").disabled = false;
+});
+
+document.getElementById("add-account-cancel-btn").addEventListener("click", () => {
+  document.getElementById("add-account-modal").classList.add("hidden");
+});
+
+document.getElementById("add-account-submit-btn").addEventListener("click", async () => {
+  const token = document.getElementById("add-account-token").value.trim();
+  const label = document.getElementById("add-account-label").value.trim() || null;
+  const errEl = document.getElementById("add-account-error");
+  if (!token) {
+    errEl.textContent = "Please enter a Personal Access Token.";
+    errEl.classList.remove("hidden");
+    return;
+  }
+  document.getElementById("add-account-submit-btn").disabled = true;
+  errEl.classList.add("hidden");
+  try {
+    const newAcct = await invoke("add_account", { token, label });
+    await handleSwitchAccount(newAcct.id);
+    document.getElementById("add-account-modal").classList.add("hidden");
+  } catch (err) {
+    errEl.textContent = String(err);
+    errEl.classList.remove("hidden");
+    document.getElementById("add-account-submit-btn").disabled = false;
+  }
+});
+
+document.getElementById("remove-account-btn").addEventListener("click", async () => {
+  const acct = accounts.find(a => a.is_active);
+  if (!acct) return;
+  const confirmed = confirm(
+    `Remove account @${acct.username} from this app?\n\nYour GitHub token will be deleted from the OS credential store. You will not be logged out of GitHub itself.`
+  );
+  if (!confirmed) return;
+  document.getElementById("account-menu").classList.add("hidden");
+  try {
+    await invoke("remove_account", { accountId: acct.id });
+    accounts = await invoke("list_accounts");
+    if (accounts.length === 0) {
+      loginScreen.classList.remove("hidden");
+      appScreen.classList.add("hidden");
+      repos = []; issues = []; pulls = []; alerts = [];
+      selectedRepo = null;
+    } else {
+      await handleSwitchAccount(accounts[0].id);
+    }
+  } catch (err) {
+    alert(`Failed to remove account: ${err}`);
+  }
+});
+
 
 // ── Repositories ────────────────────────────────
 async function loadRepos() {
