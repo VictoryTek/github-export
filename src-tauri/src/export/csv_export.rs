@@ -84,3 +84,26 @@ pub fn export_to_csv(
     wtr.flush()?;
     Ok(())
 }
+
+/// Export workflow runs to a standalone CSV file.
+pub fn export_actions_csv(runs: &[crate::models::WorkflowRun], path: &str) -> anyhow::Result<()> {
+    let file = std::fs::File::create(path).context("Could not create CSV file")?;
+    let mut wtr = csv::Writer::from_writer(file);
+
+    wtr.write_record(["ID", "Workflow", "Branch", "Status", "Conclusion", "Actor", "Started", "URL"])?;
+    for r in runs {
+        wtr.write_record([
+            &r.id.to_string(),
+            &r.name,
+            r.head_branch.as_deref().unwrap_or(""),
+            &r.status,
+            r.conclusion.as_deref().unwrap_or(""),
+            &r.actor_login,
+            r.run_started_at.as_deref().unwrap_or(&r.created_at),
+            &r.html_url,
+        ])?;
+    }
+
+    wtr.flush()?;
+    Ok(())
+}

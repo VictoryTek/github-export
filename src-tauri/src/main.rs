@@ -262,6 +262,35 @@ async fn export_data(
     Ok(format!("Exported to {file_path}"))
 }
 
+/// Fetch the most recent GitHub Actions workflow runs for a repository.
+#[cfg(not(feature = "dev-mock"))]
+#[tauri::command]
+async fn get_workflow_runs(
+    owner: String,
+    repo: String,
+    state: State<'_, Mutex<AppState>>,
+) -> Result<Vec<models::WorkflowRun>, String> {
+    let client = {
+        let app = state.lock().map_err(|e| e.to_string())?;
+        app.client.clone().ok_or("Not authenticated")?
+    };
+    github::actions::fetch_workflow_runs(&client, &owner, &repo)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+/// Export workflow runs to a CSV file chosen via a save dialog.
+#[cfg(not(feature = "dev-mock"))]
+#[tauri::command]
+async fn export_actions_csv(
+    runs: Vec<models::WorkflowRun>,
+    file_path: String,
+) -> Result<String, String> {
+    export::csv_export::export_actions_csv(&runs, &file_path)
+        .map(|_| format!("Exported {} workflow run(s) to {}", runs.len(), file_path))
+        .map_err(|e| e.to_string())
+}
+
 // ──────────────────────────────────────────────
 // Application entry‐point
 // ──────────────────────────────────────────────
@@ -291,6 +320,8 @@ fn main() {
         add_tracked_repo,
         remove_tracked_repo,
         list_all_repos,
+        get_workflow_runs,
+        export_actions_csv,
     ]);
 
     #[cfg(feature = "dev-mock")]
@@ -311,6 +342,8 @@ fn main() {
         mock::add_tracked_repo,
         mock::remove_tracked_repo,
         mock::list_all_repos,
+        mock::get_workflow_runs,
+        mock::export_actions_csv,
     ]);
 
     builder

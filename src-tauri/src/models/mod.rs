@@ -178,6 +178,26 @@ pub struct FilterParams {
 }
 
 // ──────────────────────────────────────────────
+// GitHub Actions workflow run
+// ──────────────────────────────────────────────
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct WorkflowRun {
+    pub id: u64,
+    pub name: String,
+    pub head_branch: Option<String>,
+    pub run_number: u64,
+    pub event: String,
+    pub status: String,
+    pub conclusion: Option<String>,
+    pub actor_login: String,
+    pub created_at: String,
+    pub run_started_at: Option<String>,
+    pub html_url: String,
+    pub workflow_id: u64,
+}
+
+// ──────────────────────────────────────────────
 // Export format enum
 // ──────────────────────────────────────────────
 

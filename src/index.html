@@ -99,6 +99,7 @@
     <main id="content">
       <!-- Tabs -->
       <nav id="tabs">
+        <button id="actions-tab" class="tab" data-tab="actions" aria-label="Actions">Actions<span class="tab-status-dot" aria-hidden="true"></span></button>
         <button id="issues-tab" class="tab active" data-tab="issues">Issues<span class="tab-badge" aria-hidden="true"></span></button>
         <button id="pulls-tab" class="tab" data-tab="pulls">Pull Requests<span class="tab-badge" aria-hidden="true"></span></button>
         <button id="security-tab" class="tab" data-tab="alerts">Security Alerts<span class="tab-badge" aria-hidden="true"></span></button>
@@ -124,6 +125,28 @@
       </div>
 
       <!-- Data tables -->
+      <div id="tab-actions" class="tab-panel">
+        <div class="actions-panel-header">
+          <button id="export-actions-btn" class="actions-export-btn" disabled>Export CSV</button>
+        </div>
+        <div id="actions-loading" class="hidden" style="padding:1rem;color:var(--text-muted)">Loading workflow runs…</div>
+        <div id="actions-error" class="hidden fetch-error"></div>
+        <div id="actions-empty" class="hidden fetch-info">No workflow runs found.</div>
+        <table id="actions-table" class="hidden">
+          <thead>
+            <tr>
+              <th>Workflow</th>
+              <th>Branch</th>
+              <th>Status</th>
+              <th>Actor</th>
+              <th>Started</th>
+              <th>Link</th>
+            </tr>
+          </thead>
+          <tbody id="actions-tbody"></tbody>
+        </table>
+      </div>
+
       <div id="tab-issues" class="tab-panel active">
         <table id="issues-table">
           <thead>

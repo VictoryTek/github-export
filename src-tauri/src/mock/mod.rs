@@ -7,7 +7,7 @@
 //
 // Activate via: npm run dev:mock
 
-use crate::models::{AppState, FilterParams, Issue, PullDetail, PullRequest, Repo, SecurityAlert};
+use crate::models::{AppState, FilterParams, Issue, PullDetail, PullRequest, Repo, SecurityAlert, WorkflowRun};
 use chrono::DateTime;
 use std::sync::Mutex;
 
@@ -388,4 +388,23 @@ pub fn list_all_repos(
     state: tauri::State<'_, Mutex<AppState>>,
 ) -> Result<Vec<crate::models::Repo>, String> {
     list_repos(state)
+}
+
+/// Returns an empty workflow runs list in mock mode.
+#[tauri::command]
+pub fn get_workflow_runs(
+    _owner: String,
+    _repo: String,
+    _state: tauri::State<'_, Mutex<AppState>>,
+) -> Result<Vec<WorkflowRun>, String> {
+    Ok(vec![])
+}
+
+/// No-op export in mock mode — returns a success message.
+#[tauri::command]
+pub fn export_actions_csv(
+    _runs: Vec<WorkflowRun>,
+    _file_path: String,
+) -> Result<String, String> {
+    Ok("Mock export complete".to_string())
 }

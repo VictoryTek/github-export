@@ -124,6 +124,76 @@ code { background: var(--surface); padding: 2px 6px; border-radius: 3px; font-si
   box-sizing: border-box;
 }
 
+/* ─── Actions tab status dot ─────────────────────────────── */
+.tab-status-dot {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: none;
+  pointer-events: none;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+.tab-status-dot--success {
+  display: block;
+  background-color: var(--green);
+}
+
+.tab-status-dot--failure {
+  display: block;
+  background-color: var(--red);
+}
+
+.tab-status-dot--pending {
+  display: block;
+  background-color: var(--orange);
+  animation: pulse-dot 1.2s ease-in-out infinite;
+}
+
+.tab-status-dot--neutral {
+  display: block;
+  background-color: var(--text-muted);
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.5; transform: scale(0.85); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tab-status-dot--pending {
+    animation: none;
+  }
+}
+
+/* ─── Actions panel header ───────────────────── */
+.actions-panel-header {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0.5rem 1rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.actions-export-btn {
+  padding: 0.35rem 0.8rem;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: opacity 0.15s;
+}
+
+.actions-export-btn:disabled { opacity: 0.4; cursor: default; }
+.actions-export-btn:not(:disabled):hover { opacity: 0.85; }
+
 /* Toolbar */
 #toolbar {
   display: flex;
