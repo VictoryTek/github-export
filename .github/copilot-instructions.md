@@ -522,36 +522,43 @@ The project's preflight script defines them.
 
 Spawn Commit Message generation.
 
-The Orchestrator must produce a clean Git commit message using the exact structure below.
+The Orchestrator MUST generate a Git commit message using the EXACT template below.
 
-Output MUST follow this format:
+The output MUST contain ONLY the following structure:
 
+```
 <ONE LINE COMMIT SUMMARY>
 
 <DESCRIPTION PARAGRAPH EXPLAINING THE CHANGE>
 
 Modified Files:
-- path/to/file1
-- path/to/file2
-- path/to/file3
+- file/path/one
+- file/path/two
+- file/path/three
+```
 
-Rules:
+Strict Rules:
 
-• The FIRST line MUST be a one-line summary of the change  
-• The summary should be concise and ideally under 72 characters  
-• The SECOND section MUST be a short paragraph describing what was implemented and why  
-• The description should explain the change at a developer level  
-• The THIRD section MUST list all modified files collected from previous phases  
+1. The FIRST line MUST be a **single concise commit summary**.
+2. The summary MUST describe the change in one sentence.
+3. The summary MUST be **under 72 characters**.
+4. The SECOND section MUST be a **paragraph describing the change and purpose**.
+5. The THIRD section MUST list all modified files from previous phases.
 
-Restrictions:
+The output MUST NOT contain:
 
-• DO NOT include bullet-point summaries  
-• DO NOT include validation results  
-• DO NOT include build/test/preflight information  
-• DO NOT include review scores or grading tables  
-• ONLY output the three sections defined above  
+- "Commit Message" headings
+- "Validation" sections
+- build/test/preflight results
+- grading tables
+- review results
+- extra commentary
+- extra sections
+- bullet summaries
 
-This output must be clean and copy-paste ready for use as a Git commit message.
+If the output does not follow the template exactly, regenerate it until it does.
+
+The result must be clean and copy-paste ready for `git commit`.
 
 ---
 

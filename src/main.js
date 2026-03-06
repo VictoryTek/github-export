@@ -164,6 +164,7 @@ logoutBtn.addEventListener("click", async () => {
   await invoke("logout");
   accounts = [];
   activeAccountId = null;
+  clearTabBadges();
   loginScreen.classList.remove("hidden");
   appScreen.classList.add("hidden");
   document.getElementById('pat-input').value = '';
@@ -231,6 +232,7 @@ async function handleSwitchAccount(accountId) {
     issues = [];
     pulls = [];
     alerts = [];
+    clearTabBadges();
     pickerLoaded = false;
     allRepos = [];
     repoList.innerHTML = "";
@@ -483,6 +485,7 @@ async function handleRemoveTrackedRepo(fullName) {
       pulls = [];
       alerts = [];
       placeholder.classList.remove("hidden");
+      clearTabBadges();
     }
     renderTrackedRepoList(trackedRepos);
   } catch (e) {
@@ -555,6 +558,34 @@ function buildFilters() {
 // ── Data fetching ───────────────────────────────
 let issuesError = null, pullsError = null, alertsError = null;
 
+// ── Tab badges ──────────────────────────────────
+function updateTabBadges(issueCount, pullCount, alertCount) {
+  const tabs = [
+    { badgeSel: '#issues-tab .tab-badge',   btnSel: '#issues-tab',   base: 'Issues',          count: issueCount },
+    { badgeSel: '#pulls-tab .tab-badge',    btnSel: '#pulls-tab',    base: 'Pull Requests',   count: pullCount  },
+    { badgeSel: '#security-tab .tab-badge', btnSel: '#security-tab', base: 'Security Alerts', count: alertCount },
+  ];
+  tabs.forEach(({ badgeSel, btnSel, base, count }) => {
+    const badge = $(badgeSel);
+    const btn   = $(btnSel);
+    if (!badge || !btn) return;
+    if (count === 0) {
+      badge.style.display = 'none';
+      badge.textContent   = '';
+    } else {
+      const label = count > 99 ? '99+' : String(count);
+      badge.textContent   = label;
+      badge.style.display = 'inline-block';
+    }
+    const countLabel = count > 0 ? ': ' + (count > 99 ? '99+' : count) + ' items' : '';
+    btn.setAttribute('aria-label', `${base}${countLabel}`);
+  });
+}
+
+function clearTabBadges() {
+  updateTabBadges(0, 0, 0);
+}
+
 async function refreshData() {
   if (!selectedRepo) return;
   placeholder.classList.add("hidden");
@@ -606,6 +637,7 @@ async function refreshData() {
   renderIssues();
   renderPulls();
   renderAlerts();
+  updateTabBadges(issues.length, pulls.length, alerts.length);
 
   expandedRow = null; // Reset expanded state on data refresh
 
