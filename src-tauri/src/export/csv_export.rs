@@ -2,14 +2,15 @@ use anyhow::{Context, Result};
 use csv::Writer;
 use std::fs::File;
 
-use crate::models::{Issue, PullRequest, SecurityAlert};
+use crate::models::{Issue, PullRequest, SecurityAlert, WorkflowRun};
 
-/// Export issues, pull requests, and security alerts to a single CSV file,
-/// broken into labelled sections.
+/// Export issues, pull requests, security alerts, and workflow runs to a single
+/// CSV file, broken into labelled sections.
 pub fn export_to_csv(
     issues: &[Issue],
     pulls: &[PullRequest],
     alerts: &[SecurityAlert],
+    workflow_runs: &[WorkflowRun],
     path: &str,
 ) -> Result<()> {
     let file = File::create(path).context("Could not create CSV file")?;
@@ -81,27 +82,24 @@ pub fn export_to_csv(
         }
     }
 
-    wtr.flush()?;
-    Ok(())
-}
-
-/// Export workflow runs to a standalone CSV file.
-pub fn export_actions_csv(runs: &[crate::models::WorkflowRun], path: &str) -> anyhow::Result<()> {
-    let file = std::fs::File::create(path).context("Could not create CSV file")?;
-    let mut wtr = csv::Writer::from_writer(file);
-
-    wtr.write_record(["ID", "Workflow", "Branch", "Status", "Conclusion", "Actor", "Started", "URL"])?;
-    for r in runs {
+    // ── Workflow Runs ───────────────────────
+    if !workflow_runs.is_empty() {
+        wtr.write_record(["[Workflow Runs]", "", "", "", "", "", "", ""])?;
         wtr.write_record([
-            &r.id.to_string(),
-            &r.name,
-            r.head_branch.as_deref().unwrap_or(""),
-            &r.status,
-            r.conclusion.as_deref().unwrap_or(""),
-            &r.actor_login,
-            r.run_started_at.as_deref().unwrap_or(&r.created_at),
-            &r.html_url,
+            "ID", "Workflow", "Branch", "Status", "Conclusion", "Actor", "Started", "URL",
         ])?;
+        for r in workflow_runs {
+            wtr.write_record([
+                &r.id.to_string(),
+                &r.name,
+                r.head_branch.as_deref().unwrap_or(""),
+                &r.status,
+                r.conclusion.as_deref().unwrap_or(""),
+                &r.actor_login,
+                r.run_started_at.as_deref().unwrap_or(&r.created_at),
+                &r.html_url,
+            ])?;
+        }
     }
 
     wtr.flush()?;

@@ -27,11 +27,13 @@ let repos     = [];
 let issues    = [];
 let pulls     = [];
 let alerts    = [];
+// NOTE: workflowRuns and actionsLoaded retained for export functions but
+// the Actions tab is hidden. See index.html comment for why.
 let workflowRuns  = [];
 let activeTab = "issues";
 let selectedRepo = null;   // { owner, name }
 let expandedRow  = null;   // { type: "issues"|"pulls"|"alerts", idx: number } | null
-let actionsLoaded = false; // whether workflow runs have been fetched for the current repo
+let actionsLoaded = false;
 let accounts        = [];  // AccountInfo[] — mirrors backend accounts list
 let activeAccountId = null; // String — currently active account id
 let trackedRepos  = [];     // TrackedRepo[] — the user's curated tracked list
@@ -398,6 +400,9 @@ function selectTrackedRepo(repo) {
       li.classList.add("selected");
     }
   });
+  actionsLoaded = false;
+  workflowRuns = [];
+  updateActionStatusDot([]);
   refreshData();
 }
 
@@ -589,7 +594,6 @@ function clearTabBadges() {
   updateTabBadges(0, 0, 0);
   workflowRuns = [];
   actionsLoaded = false;
-  updateActionStatusDot([]);
 }
 
 async function refreshData() {
@@ -636,25 +640,9 @@ async function refreshData() {
   if (runsRes.status === "fulfilled") {
     workflowRuns = runsRes.value;
     actionsLoaded = true;
-    if (activeTab === "actions") renderWorkflowRuns(workflowRuns);
-    updateActionStatusDot(workflowRuns);
-    document.getElementById("export-actions-btn").disabled = workflowRuns.length === 0;
   } else {
     workflowRuns = [];
     actionsLoaded = false;
-    if (activeTab === "actions") {
-      const actionsErrorEl = document.getElementById("actions-error");
-      const actionsEmptyEl = document.getElementById("actions-empty");
-      const actionsTableEl = document.getElementById("actions-table");
-      if (actionsErrorEl) {
-        actionsErrorEl.textContent = "Failed to load workflow runs: " + String(runsRes.reason);
-        actionsErrorEl.classList.remove("hidden");
-      }
-      if (actionsEmptyEl) actionsEmptyEl.classList.add("hidden");
-      if (actionsTableEl) actionsTableEl.classList.add("hidden");
-    }
-    updateActionStatusDot([]);
-    document.getElementById("export-actions-btn").disabled = true;
     console.error("get_workflow_runs failed:", runsRes.reason);
   }
 
@@ -814,139 +802,14 @@ document.getElementById('refresh-btn').addEventListener('click', () => {
   refreshData();
 });
 
-// ── Actions tab ─────────────────────────────────
+// Actions tab is hidden (see index.html comment). updateActionStatusDot
+// stub retained so calls in selectTrackedRepo don't throw at runtime.
+function updateActionStatusDot(_runs) {}
 
-function updateActionStatusDot(runs) {
-  const dot = document.querySelector('#actions-tab .tab-status-dot');
-  const btn = document.getElementById('actions-tab');
-  if (!dot || !btn) return;
+// renderWorkflowRuns removed — Actions tab is hidden.
+// Restore from git history when re-enabling the tab.
 
-  // Reset to hidden
-  dot.className = 'tab-status-dot';
-  btn.setAttribute('aria-label', 'Actions');
-
-  if (!runs || runs.length === 0) return;
-
-  const latest = runs[0];
-  if (latest.status === 'in_progress' || latest.status === 'queued') {
-    dot.classList.add('tab-status-dot--pending');
-    btn.setAttribute('aria-label', 'Actions: run in progress');
-  } else if (latest.conclusion === 'success') {
-    dot.classList.add('tab-status-dot--success');
-    btn.setAttribute('aria-label', 'Actions: last run passed');
-  } else if (
-    latest.conclusion === 'failure' ||
-    latest.conclusion === 'timed_out' ||
-    latest.conclusion === 'action_required'
-  ) {
-    dot.classList.add('tab-status-dot--failure');
-    btn.setAttribute('aria-label', 'Actions: last run failed');
-  } else {
-    dot.classList.add('tab-status-dot--neutral');
-    btn.setAttribute('aria-label', 'Actions: last run ' + (latest.conclusion || 'unknown'));
-  }
-}
-
-function renderWorkflowRuns(runs) {
-  const tbody = document.getElementById('actions-tbody');
-  const tableEl = document.getElementById('actions-table');
-  const emptyEl = document.getElementById('actions-empty');
-
-  if (!runs || runs.length === 0) {
-    if (tableEl) tableEl.classList.add('hidden');
-    if (emptyEl) emptyEl.classList.remove('hidden');
-    return;
-  }
-
-  if (emptyEl) emptyEl.classList.add('hidden');
-  if (tableEl) tableEl.classList.remove('hidden');
-
-  tbody.innerHTML = runs.map((r) => {
-    const status = r.status || '';
-    const conclusion = r.conclusion || '';
-
-    let badgeColor;
-    if (conclusion === 'success') {
-      badgeColor = 'var(--green)';
-    } else if (conclusion === 'failure' || conclusion === 'timed_out' || conclusion === 'action_required') {
-      badgeColor = 'var(--red)';
-    } else {
-      badgeColor = 'var(--text-muted)';
-    }
-
-    const statusLabel = conclusion ? `${esc(status)} / ${esc(conclusion)}` : esc(status);
-    const badgeHtml = `<span style="color:${badgeColor};font-weight:600">${statusLabel}</span>`;
-
-    const started = r.run_started_at || r.created_at;
-    const startedLabel = started ? shortDate(started) : '—';
-
-    const safeUrl = /^https?:\/\//i.test(r.html_url) ? r.html_url : '#';
-    const linkHtml = `<a href="${esc(safeUrl)}" target="_blank" rel="noopener noreferrer">View</a>`;
-
-    return `<tr>
-      <td>${esc(r.name)}</td>
-      <td>${esc(r.head_branch || '—')}</td>
-      <td>${badgeHtml}</td>
-      <td>${esc(r.actor_login)}</td>
-      <td>${esc(startedLabel)}</td>
-      <td>${linkHtml}</td>
-    </tr>`;
-  }).join('');
-}
-
-async function loadActions() {
-  if (!selectedRepo) return;
-
-  const loadingEl = document.getElementById('actions-loading');
-  const errorEl   = document.getElementById('actions-error');
-  const emptyEl   = document.getElementById('actions-empty');
-  const tableEl   = document.getElementById('actions-table');
-
-  if (loadingEl) loadingEl.classList.remove('hidden');
-  if (errorEl)   errorEl.classList.add('hidden');
-  if (emptyEl)   emptyEl.classList.add('hidden');
-  if (tableEl)   tableEl.classList.add('hidden');
-
-  const { owner, name } = selectedRepo;
-  try {
-    workflowRuns = await invoke('get_workflow_runs', { owner, repo: name });
-    actionsLoaded = true;
-    renderWorkflowRuns(workflowRuns);
-    updateActionStatusDot(workflowRuns);
-    document.getElementById('export-actions-btn').disabled = false;
-  } catch (e) {
-    workflowRuns = [];
-    if (errorEl) {
-      errorEl.textContent = 'Failed to load workflow runs: ' + String(e);
-      errorEl.classList.remove('hidden');
-    }
-    console.error('get_workflow_runs failed:', e);
-  } finally {
-    if (loadingEl) loadingEl.classList.add('hidden');
-  }
-}
-
-document.getElementById('actions-tab').addEventListener('click', () => {
-  if (!actionsLoaded) {
-    loadActions();
-  } else {
-    renderWorkflowRuns(workflowRuns);
-  }
-});
-
-document.getElementById('export-actions-btn').addEventListener('click', async () => {
-  const filePath = await save({
-    filters: [{ name: 'CSV', extensions: ['csv'] }],
-    defaultPath: 'workflow-runs.csv',
-  });
-  if (!filePath) return;
-  try {
-    const msg = await invoke('export_actions_csv', { runs: workflowRuns, filePath });
-    alert(msg);
-  } catch (e) {
-    alert('Export failed: ' + String(e));
-  }
-});
+// loadActions and actions-tab click listener removed — tab is hidden.
 
 // ── Export ───────────────────────────────────────
 exportCsv.addEventListener("click", () => doExport("csv"));
@@ -966,6 +829,7 @@ async function doExport(format) {
       issues,
       pulls,
       alerts,
+      workflowRuns,
       filePath,
     });
     alert(msg);

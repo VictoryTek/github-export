@@ -390,21 +390,69 @@ pub fn list_all_repos(
     list_repos(state)
 }
 
-/// Returns an empty workflow runs list in mock mode.
+/// Returns realistic mock workflow runs for development and UI testing.
 #[tauri::command]
 pub fn get_workflow_runs(
     _owner: String,
     _repo: String,
     _state: tauri::State<'_, Mutex<AppState>>,
 ) -> Result<Vec<WorkflowRun>, String> {
-    Ok(vec![])
-}
-
-/// No-op export in mock mode — returns a success message.
-#[tauri::command]
-pub fn export_actions_csv(
-    _runs: Vec<WorkflowRun>,
-    _file_path: String,
-) -> Result<String, String> {
-    Ok("Mock export complete".to_string())
+    Ok(vec![
+        WorkflowRun {
+            id: 12_345_678,
+            name: "CI".to_string(),
+            head_branch: Some("main".to_string()),
+            run_number: 42,
+            event: "push".to_string(),
+            status: "completed".to_string(),
+            conclusion: Some("success".to_string()),
+            actor_login: "octocat".to_string(),
+            created_at: "2026-03-05T14:32:00Z".to_string(),
+            run_started_at: Some("2026-03-05T14:32:10Z".to_string()),
+            html_url: "https://github.com/octocat/Hello-World/actions/runs/12345678".to_string(),
+            workflow_id: 1_001,
+        },
+        WorkflowRun {
+            id: 12_345_677,
+            name: "CI".to_string(),
+            head_branch: Some("feat/oauth-device-flow".to_string()),
+            run_number: 41,
+            event: "pull_request".to_string(),
+            status: "completed".to_string(),
+            conclusion: Some("failure".to_string()),
+            actor_login: "monalisa".to_string(),
+            created_at: "2026-03-04T09:15:00Z".to_string(),
+            run_started_at: Some("2026-03-04T09:15:22Z".to_string()),
+            html_url: "https://github.com/octocat/Hello-World/actions/runs/12345677".to_string(),
+            workflow_id: 1_001,
+        },
+        WorkflowRun {
+            id: 12_345_676,
+            name: "CodeQL".to_string(),
+            head_branch: Some("main".to_string()),
+            run_number: 18,
+            event: "schedule".to_string(),
+            status: "in_progress".to_string(),
+            conclusion: None,
+            actor_login: "github-actions[bot]".to_string(),
+            created_at: "2026-03-06T00:00:00Z".to_string(),
+            run_started_at: Some("2026-03-06T00:00:05Z".to_string()),
+            html_url: "https://github.com/octocat/Hello-World/actions/runs/12345676".to_string(),
+            workflow_id: 1_002,
+        },
+        WorkflowRun {
+            id: 12_345_675,
+            name: "Release".to_string(),
+            head_branch: Some("main".to_string()),
+            run_number: 7,
+            event: "push".to_string(),
+            status: "completed".to_string(),
+            conclusion: Some("cancelled".to_string()),
+            actor_login: "defunkt".to_string(),
+            created_at: "2026-03-01T18:45:00Z".to_string(),
+            run_started_at: Some("2026-03-01T18:45:30Z".to_string()),
+            html_url: "https://github.com/octocat/Hello-World/actions/runs/12345675".to_string(),
+            workflow_id: 1_003,
+        },
+    ])
 }

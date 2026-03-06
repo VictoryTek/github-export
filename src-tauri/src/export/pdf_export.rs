@@ -3,7 +3,7 @@ use genpdf::elements::{Break, Paragraph, TableLayout};
 use genpdf::style::Style;
 use genpdf::{Document, Element, SimplePageDecorator};
 
-use crate::models::{Issue, PullRequest, SecurityAlert};
+use crate::models::{Issue, PullRequest, SecurityAlert, WorkflowRun};
 
 /// Default font family bundled with genpdf (Liberation Sans).
 const FONT_FAMILY: &str = "LiberationSans";
@@ -13,6 +13,7 @@ pub fn export_to_pdf(
     issues: &[Issue],
     pulls: &[PullRequest],
     alerts: &[SecurityAlert],
+    workflow_runs: &[WorkflowRun],
     path: &str,
 ) -> Result<()> {
     // genpdf requires a font directory – we bundle Liberation Sans which ships
@@ -87,6 +88,27 @@ pub fn export_to_pdf(
                     &a.severity,
                     &a.summary,
                     a.package_name.as_deref().unwrap_or("—"),
+                ],
+            );
+        }
+        doc.push(table);
+    }
+
+    // ── Workflow Runs ────────────────────────
+    if !workflow_runs.is_empty() {
+        doc.push(section_heading("Workflow Runs"));
+        let mut table = TableLayout::new(vec![2, 2, 1, 1, 2]);
+        table.set_cell_decorator(genpdf::elements::FrameCellDecorator::new(true, true, false));
+        push_table_row(&mut table, &["Workflow", "Branch", "Status", "Conclusion", "Actor"]);
+        for r in workflow_runs {
+            push_table_row(
+                &mut table,
+                &[
+                    &r.name,
+                    r.head_branch.as_deref().unwrap_or("—"),
+                    &r.status,
+                    r.conclusion.as_deref().unwrap_or("—"),
+                    &r.actor_login,
                 ],
             );
         }

@@ -240,22 +240,23 @@ async fn get_pull_detail(
         .map_err(|e| e.to_string())
 }
 
-/// Export items (issues, PRs, or alerts) to CSV or PDF.
+/// Export items (issues, PRs, alerts, and workflow runs) to CSV or PDF.
 #[tauri::command]
 async fn export_data(
     format: ExportFormat,
     issues: Vec<models::Issue>,
     pulls: Vec<models::PullRequest>,
     alerts: Vec<models::SecurityAlert>,
+    workflow_runs: Vec<models::WorkflowRun>,
     file_path: String,
 ) -> Result<String, String> {
     match format {
         ExportFormat::Csv => {
-            export::csv_export::export_to_csv(&issues, &pulls, &alerts, &file_path)
+            export::csv_export::export_to_csv(&issues, &pulls, &alerts, &workflow_runs, &file_path)
                 .map_err(|e| e.to_string())?;
         }
         ExportFormat::Pdf => {
-            export::pdf_export::export_to_pdf(&issues, &pulls, &alerts, &file_path)
+            export::pdf_export::export_to_pdf(&issues, &pulls, &alerts, &workflow_runs, &file_path)
                 .map_err(|e| e.to_string())?;
         }
     }
@@ -270,24 +271,12 @@ async fn get_workflow_runs(
     repo: String,
     state: State<'_, Mutex<AppState>>,
 ) -> Result<Vec<models::WorkflowRun>, String> {
-    let client = {
+    let token = {
         let app = state.lock().map_err(|e| e.to_string())?;
-        app.client.clone().ok_or("Not authenticated")?
+        app.token.clone().ok_or("Not authenticated")?
     };
-    github::actions::fetch_workflow_runs(&client, &owner, &repo)
+    github::actions::fetch_workflow_runs(&token, &owner, &repo)
         .await
-        .map_err(|e| e.to_string())
-}
-
-/// Export workflow runs to a CSV file chosen via a save dialog.
-#[cfg(not(feature = "dev-mock"))]
-#[tauri::command]
-async fn export_actions_csv(
-    runs: Vec<models::WorkflowRun>,
-    file_path: String,
-) -> Result<String, String> {
-    export::csv_export::export_actions_csv(&runs, &file_path)
-        .map(|_| format!("Exported {} workflow run(s) to {}", runs.len(), file_path))
         .map_err(|e| e.to_string())
 }
 
@@ -321,7 +310,6 @@ fn main() {
         remove_tracked_repo,
         list_all_repos,
         get_workflow_runs,
-        export_actions_csv,
     ]);
 
     #[cfg(feature = "dev-mock")]
@@ -343,7 +331,6 @@ fn main() {
         mock::remove_tracked_repo,
         mock::list_all_repos,
         mock::get_workflow_runs,
-        mock::export_actions_csv,
     ]);
 
     builder

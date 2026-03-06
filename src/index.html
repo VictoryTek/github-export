@@ -99,7 +99,7 @@
     <main id="content">
       <!-- Tabs -->
       <nav id="tabs">
-        <button id="actions-tab" class="tab" data-tab="actions" aria-label="Actions">Actions<span class="tab-status-dot" aria-hidden="true"></span></button>
+        <!-- Actions tab hidden: GitHub REST API /actions/runs returns {total_count:0, workflow_runs:[]} for all repos/tokens despite runs existing in the UI. Verified with direct PowerShell calls using the same token. Confirmed not a scope/permission issue (admin token with repo+workflow scopes). Per-workflow fallback also returns 0. Re-enable when GitHub fixes the API. See src-tauri/src/github/actions.rs for backend context. -->
         <button id="issues-tab" class="tab active" data-tab="issues">Issues<span class="tab-badge" aria-hidden="true"></span></button>
         <button id="pulls-tab" class="tab" data-tab="pulls">Pull Requests<span class="tab-badge" aria-hidden="true"></span></button>
         <button id="security-tab" class="tab" data-tab="alerts">Security Alerts<span class="tab-badge" aria-hidden="true"></span></button>
@@ -125,27 +125,6 @@
       </div>
 
       <!-- Data tables -->
-      <div id="tab-actions" class="tab-panel">
-        <div class="actions-panel-header">
-          <button id="export-actions-btn" class="actions-export-btn" disabled>Export CSV</button>
-        </div>
-        <div id="actions-loading" class="hidden" style="padding:1rem;color:var(--text-muted)">Loading workflow runs…</div>
-        <div id="actions-error" class="hidden fetch-error"></div>
-        <div id="actions-empty" class="hidden fetch-info">No workflow runs found.</div>
-        <table id="actions-table" class="hidden">
-          <thead>
-            <tr>
-              <th>Workflow</th>
-              <th>Branch</th>
-              <th>Status</th>
-              <th>Actor</th>
-              <th>Started</th>
-              <th>Link</th>
-            </tr>
-          </thead>
-          <tbody id="actions-tbody"></tbody>
-        </table>
-      </div>
 
       <div id="tab-issues" class="tab-panel active">
         <table id="issues-table">
