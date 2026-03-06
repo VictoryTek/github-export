@@ -8,11 +8,15 @@ mod github;
 #[cfg(feature = "dev-mock")]
 mod mock;
 mod models;
+mod storage;
 
 use github::auth::{
     add_account, authenticate_with_pat, delete_active_account_id, list_accounts, poll_device_flow,
-    remove_account, restore_session, start_device_flow, switch_account,
+    remove_account, start_device_flow, switch_account,
 };
+// restore_session is mocked in dev-mock builds, so only import it in non-mock builds.
+#[cfg(not(feature = "dev-mock"))]
+use github::auth::restore_session;
 #[cfg(not(feature = "dev-mock"))]
 use models::FilterParams;
 use models::{AppState, ExportFormat};
@@ -54,6 +58,112 @@ async fn list_repos(state: State<'_, Mutex<AppState>>) -> Result<Vec<models::Rep
         app.client.clone().ok_or("Not authenticated")?
     };
     github::issues::list_repos(&client)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+/// Return the tracked repository list for the currently active account.
+#[cfg(not(feature = "dev-mock"))]
+#[tauri::command]
+fn get_tracked_repos(
+    app_handle: tauri::AppHandle,
+    state: State<'_, Mutex<AppState>>,
+) -> Result<Vec<models::TrackedRepo>, String> {
+    let account_id = {
+        let app = state.lock().map_err(|e| e.to_string())?;
+        app.active_account_id
+            .clone()
+            .unwrap_or_else(|| "default".to_string())
+    };
+    Ok(storage::load_tracked_repos(&app_handle, &account_id))
+}
+
+/// Add a repository to the tracked list for the currently active account.
+/// Returns the updated tracked list. Idempotent — adding an already-tracked
+/// repo simply returns the current list without error.
+#[cfg(not(feature = "dev-mock"))]
+#[tauri::command]
+fn add_tracked_repo(
+    full_name: String,
+    owner: String,
+    name: String,
+    app_handle: tauri::AppHandle,
+    state: State<'_, Mutex<AppState>>,
+) -> Result<Vec<models::TrackedRepo>, String> {
+    // Validate that full_name == "owner/name" to prevent injection
+    let expected = format!("{owner}/{name}");
+    if full_name != expected {
+        return Err(
+            "Invalid repo identifier: full_name does not match owner/name".to_string(),
+        );
+    }
+    let valid_chars =
+        |s: &str| s.chars().all(|c| c.is_alphanumeric() || c == '-' || c == '_' || c == '.');
+    if !valid_chars(&owner) || !valid_chars(&name) {
+        return Err("Invalid characters in repository owner or name".to_string());
+    }
+
+    let account_id = {
+        let app = state.lock().map_err(|e| e.to_string())?;
+        app.active_account_id
+            .clone()
+            .unwrap_or_else(|| "default".to_string())
+    };
+
+    let mut repos = storage::load_tracked_repos(&app_handle, &account_id);
+    if repos.iter().any(|r| r.full_name == full_name) {
+        return Ok(repos);
+    }
+
+    repos.push(models::TrackedRepo {
+        full_name,
+        owner,
+        name,
+    });
+    storage::save_tracked_repos(&app_handle, &account_id, &repos)
+        .map_err(|e| format!("Failed to save tracked repos: {e}"))?;
+
+    Ok(repos)
+}
+
+/// Remove a repository from the tracked list by full_name.
+/// Returns the updated tracked list.
+#[cfg(not(feature = "dev-mock"))]
+#[tauri::command]
+fn remove_tracked_repo(
+    full_name: String,
+    app_handle: tauri::AppHandle,
+    state: State<'_, Mutex<AppState>>,
+) -> Result<Vec<models::TrackedRepo>, String> {
+    let account_id = {
+        let app = state.lock().map_err(|e| e.to_string())?;
+        app.active_account_id
+            .clone()
+            .unwrap_or_else(|| "default".to_string())
+    };
+
+    let mut repos = storage::load_tracked_repos(&app_handle, &account_id);
+    let original_len = repos.len();
+    repos.retain(|r| r.full_name != full_name);
+
+    if repos.len() < original_len {
+        storage::save_tracked_repos(&app_handle, &account_id, &repos)
+            .map_err(|e| format!("Failed to save tracked repos: {e}"))?;
+    }
+
+    Ok(repos)
+}
+
+/// List all repositories visible to the authenticated user (up to 100).
+/// Used exclusively by the "Add Repository" picker modal.
+#[cfg(not(feature = "dev-mock"))]
+#[tauri::command]
+async fn list_all_repos(state: State<'_, Mutex<AppState>>) -> Result<Vec<models::Repo>, String> {
+    let client = {
+        let app = state.lock().map_err(|e| e.to_string())?;
+        app.client.clone().ok_or("Not authenticated")?
+    };
+    github::issues::list_all_repos(&client)
         .await
         .map_err(|e| e.to_string())
 }
@@ -177,6 +287,10 @@ fn main() {
         fetch_security_alerts,
         get_pull_detail,
         export_data,
+        get_tracked_repos,
+        add_tracked_repo,
+        remove_tracked_repo,
+        list_all_repos,
     ]);
 
     #[cfg(feature = "dev-mock")]
@@ -193,6 +307,10 @@ fn main() {
         logout,
         export_data,
         mock::get_pull_detail,
+        mock::get_tracked_repos,
+        mock::add_tracked_repo,
+        mock::remove_tracked_repo,
+        mock::list_all_repos,
     ]);
 
     builder

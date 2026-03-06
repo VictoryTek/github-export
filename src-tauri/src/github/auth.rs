@@ -421,6 +421,8 @@ pub async fn authenticate_with_pat(
 
 /// Restore a previously saved session from the OS keyring.
 /// Handles legacy single-account migration automatically.
+// Only compiled in non-mock builds — mock mode provides its own restore_session.
+#[cfg(not(feature = "dev-mock"))]
 #[tauri::command]
 pub async fn restore_session(
     state: tauri::State<'_, Mutex<AppState>>,

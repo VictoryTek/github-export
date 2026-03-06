@@ -31,6 +31,9 @@ let activeTab = "issues";
 let selectedRepo = null;   // { owner, name }
 let expandedRow  = null;   // { type: "issues"|"pulls"|"alerts", idx: number } | nulllet accounts        = [];  // AccountInfo[] — mirrors backend accounts list
 let activeAccountId = null; // String — currently active account id
+let trackedRepos  = [];     // TrackedRepo[] — the user's curated tracked list
+let allRepos      = [];     // Repo[] — full GitHub repo list (lazy-loaded for picker)
+let pickerLoaded  = false;  // whether allRepos has been fetched this session
 // ── Boot ────────────────────────────────────────
 window.addEventListener("error", (e) => {
   document.getElementById("login-error").textContent = "JS error: " + e.message;
@@ -175,7 +178,9 @@ async function showApp(username) {
   renderAccountSwitcher();
   loginScreen.classList.add("hidden");
   appScreen.classList.remove("hidden");
-  await loadRepos();
+  pickerLoaded = false;
+  allRepos = [];
+  await loadTrackedRepos();
 }
 
 // ── Account Switcher ────────────────────────────────
@@ -226,9 +231,11 @@ async function handleSwitchAccount(accountId) {
     issues = [];
     pulls = [];
     alerts = [];
+    pickerLoaded = false;
+    allRepos = [];
     repoList.innerHTML = "";
     placeholder.classList.remove("hidden");
-    await loadRepos();
+    await loadTrackedRepos();
   } catch (err) {
     alert(`Failed to switch account: ${err}`);
   }
@@ -311,9 +318,197 @@ function renderRepoList(list) {
   });
 }
 
-repoSearch.addEventListener("input", () => {
+// ── Tracked Repositories ────────────────────────
+async function loadTrackedRepos() {
+  try {
+    trackedRepos = await invoke("get_tracked_repos");
+  } catch (e) {
+    console.error("get_tracked_repos failed:", e);
+    trackedRepos = [];
+  }
+  renderTrackedRepoList(trackedRepos);
+}
+
+function renderTrackedRepoList(list) {
   const q = repoSearch.value.toLowerCase();
-  renderRepoList(repos.filter((r) => r.full_name.toLowerCase().includes(q)));
+  const filtered = q
+    ? list.filter((r) => r.full_name.toLowerCase().includes(q))
+    : list;
+
+  repoList.innerHTML = "";
+
+  if (filtered.length === 0 && !q) {
+    const li = document.createElement("li");
+    li.className = "repo-list-empty";
+    li.textContent = "No repositories tracked yet.";
+    repoList.appendChild(li);
+    return;
+  }
+
+  filtered.forEach((r) => {
+    const li = document.createElement("li");
+    li.className = "repo-list-item";
+
+    const nameSpan = document.createElement("span");
+    nameSpan.className = "repo-list-name";
+    nameSpan.textContent = r.full_name;
+    nameSpan.title = r.full_name;
+    li.appendChild(nameSpan);
+
+    const removeBtn = document.createElement("button");
+    removeBtn.className = "repo-remove-btn";
+    removeBtn.title = `Remove ${r.full_name}`;
+    removeBtn.textContent = "×";
+    removeBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      handleRemoveTrackedRepo(r.full_name);
+    });
+    li.appendChild(removeBtn);
+
+    li.addEventListener("click", () => selectTrackedRepo(r));
+    repoList.appendChild(li);
+  });
+
+  // Re-apply selected state if selectedRepo is in the filtered list
+  if (selectedRepo) {
+    Array.from(repoList.querySelectorAll(".repo-list-item")).forEach((li, idx) => {
+      if (
+        filtered[idx] &&
+        filtered[idx].full_name === `${selectedRepo.owner}/${selectedRepo.name}`
+      ) {
+        li.classList.add("selected");
+      }
+    });
+  }
+}
+
+function selectTrackedRepo(repo) {
+  selectedRepo = { owner: repo.owner, name: repo.name };
+  Array.from(repoList.querySelectorAll(".repo-list-item")).forEach((li) =>
+    li.classList.remove("selected")
+  );
+  Array.from(repoList.querySelectorAll(".repo-list-item")).forEach((li) => {
+    const span = li.querySelector(".repo-list-name");
+    if (span && span.textContent === repo.full_name) {
+      li.classList.add("selected");
+    }
+  });
+  refreshData();
+}
+
+async function openAddRepoModal() {
+  const modal = document.getElementById("add-repo-modal");
+  const searchInput = document.getElementById("add-repo-search");
+  const listEl = document.getElementById("add-repo-list");
+  const errorEl = document.getElementById("add-repo-error");
+
+  modal.classList.remove("hidden");
+  searchInput.value = "";
+  errorEl.classList.add("hidden");
+
+  if (!pickerLoaded) {
+    listEl.innerHTML =
+      '<li class="add-repo-loading"><span class="spinner-small"></span> Loading repositories\u2026</li>';
+    try {
+      allRepos = await invoke("list_all_repos");
+      pickerLoaded = true;
+    } catch (e) {
+      listEl.innerHTML = `<li class="add-repo-error-item">Failed to load repositories: ${esc(String(e))}</li>`;
+      return;
+    }
+  }
+
+  renderPickerList(allRepos, searchInput.value);
+  searchInput.focus();
+}
+
+function renderPickerList(repos, query) {
+  const listEl = document.getElementById("add-repo-list");
+  const q = (query || "").toLowerCase();
+  const filtered = q ? repos.filter((r) => r.full_name.toLowerCase().includes(q)) : repos;
+  const trackedSet = new Set(trackedRepos.map((r) => r.full_name));
+
+  listEl.innerHTML = "";
+
+  if (filtered.length === 0) {
+    listEl.innerHTML = '<li class="add-repo-empty">No repositories found.</li>';
+    return;
+  }
+
+  filtered.forEach((r) => {
+    const li = document.createElement("li");
+    li.className = "add-repo-item";
+    const alreadyTracked = trackedSet.has(r.full_name);
+    if (alreadyTracked) li.classList.add("add-repo-item-tracked");
+
+    li.innerHTML = `
+      <span class="add-repo-item-name">${esc(r.full_name)}</span>
+      ${r.description ? `<span class="add-repo-item-desc">${esc(r.description)}</span>` : ""}
+      ${alreadyTracked ? '<span class="add-repo-item-check" aria-label="Already tracked">\u2713</span>' : ""}
+    `;
+
+    if (!alreadyTracked) {
+      li.addEventListener("click", () => handleAddTrackedRepo(r));
+    }
+
+    listEl.appendChild(li);
+  });
+}
+
+async function handleAddTrackedRepo(repo) {
+  const errorEl = document.getElementById("add-repo-error");
+  errorEl.classList.add("hidden");
+  try {
+    trackedRepos = await invoke("add_tracked_repo", {
+      fullName: repo.full_name,
+      owner: repo.owner,
+      name: repo.name,
+    });
+    document.getElementById("add-repo-modal").classList.add("hidden");
+    renderTrackedRepoList(trackedRepos);
+    const added = trackedRepos.find((r) => r.full_name === repo.full_name);
+    if (added) selectTrackedRepo(added);
+  } catch (e) {
+    errorEl.textContent = `Failed to add repository: ${esc(String(e))}`;
+    errorEl.classList.remove("hidden");
+  }
+}
+
+async function handleRemoveTrackedRepo(fullName) {
+  try {
+    trackedRepos = await invoke("remove_tracked_repo", { fullName });
+    if (selectedRepo && `${selectedRepo.owner}/${selectedRepo.name}` === fullName) {
+      selectedRepo = null;
+      issues = [];
+      pulls = [];
+      alerts = [];
+      placeholder.classList.remove("hidden");
+    }
+    renderTrackedRepoList(trackedRepos);
+  } catch (e) {
+    alert(`Failed to remove repository: ${e}`);
+  }
+}
+
+// ── Add Repository button & modal events ────────
+document.getElementById("add-repo-btn").addEventListener("click", openAddRepoModal);
+
+document.getElementById("add-repo-close-btn").addEventListener("click", () => {
+  document.getElementById("add-repo-modal").classList.add("hidden");
+});
+
+document.getElementById("add-repo-modal").addEventListener("click", (e) => {
+  if (e.target === document.getElementById("add-repo-modal")) {
+    document.getElementById("add-repo-modal").classList.add("hidden");
+  }
+});
+
+document.getElementById("add-repo-search").addEventListener("input", (e) => {
+  renderPickerList(allRepos, e.target.value);
+});
+
+repoSearch.addEventListener("input", () => {
+  renderTrackedRepoList(trackedRepos);
 });
 
 async function selectRepo(repo) {

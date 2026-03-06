@@ -41,6 +41,44 @@ pub async fn list_repos(client: &Octocrab) -> Result<Vec<Repo>> {
     Ok(repos)
 }
 
+/// List up to 100 repositories visible to the authenticated user.
+/// Used by the "Add Repository" picker modal.
+pub async fn list_all_repos(client: &Octocrab) -> Result<Vec<Repo>> {
+    let mut page = client
+        .current()
+        .list_repos_for_authenticated_user()
+        .sort("updated")
+        .per_page(100)
+        .send()
+        .await
+        .context("Failed to list repositories")?;
+
+    let repos = page
+        .take_items()
+        .into_iter()
+        .map(|r| Repo {
+            id: r.id.into_inner(),
+            name: r.name.clone(),
+            full_name: r.full_name.clone().unwrap_or_default(),
+            owner: r
+                .owner
+                .as_ref()
+                .map(|o| o.login.clone())
+                .unwrap_or_default(),
+            description: r.description.clone(),
+            private: r.private.unwrap_or(false),
+            html_url: r
+                .html_url
+                .as_ref()
+                .map(|u| u.to_string())
+                .unwrap_or_default(),
+            open_issues_count: r.open_issues_count.unwrap_or(0),
+        })
+        .collect();
+
+    Ok(repos)
+}
+
 /// Fetch issues for a specific repository, with optional filters.
 pub async fn fetch_issues(
     client: &Octocrab,

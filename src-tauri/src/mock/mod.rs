@@ -343,3 +343,49 @@ pub fn get_pull_detail(
 pub fn get_dev_mode() -> bool {
     true
 }
+
+// ── Tracked Repos (mock — in-memory via AppState) ─────────────────────────
+
+/// Return the in-memory tracked repos list (mock mode).
+#[tauri::command]
+pub fn get_tracked_repos(
+    state: tauri::State<'_, Mutex<AppState>>,
+) -> Result<Vec<crate::models::TrackedRepo>, String> {
+    let app = state.lock().map_err(|e| e.to_string())?;
+    Ok(app.tracked_repos.clone())
+}
+
+/// Add a repo to the in-memory tracked list (mock mode). Idempotent.
+#[tauri::command]
+pub fn add_tracked_repo(
+    full_name: String,
+    owner: String,
+    name: String,
+    state: tauri::State<'_, Mutex<AppState>>,
+) -> Result<Vec<crate::models::TrackedRepo>, String> {
+    let mut app = state.lock().map_err(|e| e.to_string())?;
+    if !app.tracked_repos.iter().any(|r| r.full_name == full_name) {
+        app.tracked_repos
+            .push(crate::models::TrackedRepo { full_name, owner, name });
+    }
+    Ok(app.tracked_repos.clone())
+}
+
+/// Remove a repo from the in-memory tracked list by full_name (mock mode).
+#[tauri::command]
+pub fn remove_tracked_repo(
+    full_name: String,
+    state: tauri::State<'_, Mutex<AppState>>,
+) -> Result<Vec<crate::models::TrackedRepo>, String> {
+    let mut app = state.lock().map_err(|e| e.to_string())?;
+    app.tracked_repos.retain(|r| r.full_name != full_name);
+    Ok(app.tracked_repos.clone())
+}
+
+/// Return the same mock repos as `list_repos` for the Add Repository picker.
+#[tauri::command]
+pub fn list_all_repos(
+    state: tauri::State<'_, Mutex<AppState>>,
+) -> Result<Vec<crate::models::Repo>, String> {
+    list_repos(state)
+}

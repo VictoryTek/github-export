@@ -71,7 +71,11 @@
         <!-- Active account chip -->
         <div id="account-chip" class="account-chip">
           <span id="username" class="account-username"></span>
-          <button id="account-menu-btn" class="account-menu-btn" title="Manage accounts" aria-haspopup="true" aria-expanded="false">▾</button>
+          <button id="account-menu-btn" class="account-menu-btn" title="Manage accounts" aria-haspopup="true" aria-expanded="false">
+            <svg class="chevron-icon" width="12" height="12" viewBox="0 0 12 12" fill="currentColor" aria-hidden="true">
+              <path d="M2.22 4.47a.75.75 0 0 1 1.06 0L6 7.19l2.72-2.72a.75.75 0 1 1 1.06 1.06L6.53 8.78a.75.75 0 0 1-1.06 0L2.22 5.53a.75.75 0 0 1 0-1.06Z"/>
+            </svg>
+          </button>
         </div>
 
         <!-- Account dropdown menu (hidden by default) -->
@@ -86,6 +90,7 @@
         </div>
       </div>
       <h3>Repositories</h3>
+      <button id="add-repo-btn" class="btn-add-repo">+ Add Repository</button>
       <input id="repo-search" type="text" placeholder="Filter repos…" />
       <ul id="repo-list"></ul>
     </aside>
@@ -172,6 +177,20 @@
         <button id="add-account-submit-btn" class="btn-github-signin">Add Account</button>
         <button id="add-account-cancel-btn" class="btn-cancel">Cancel</button>
       </div>
+    </div>
+  </div>
+
+  <!-- Add Repository modal overlay -->
+  <div id="add-repo-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="add-repo-title">
+    <div class="modal-card modal-card-large">
+      <div class="modal-header">
+        <h2 id="add-repo-title" class="modal-title">Add Repository</h2>
+        <button id="add-repo-close-btn" class="modal-close-btn" aria-label="Close">×</button>
+      </div>
+      <p class="modal-subtitle">Select a repository to track in your sidebar.</p>
+      <input id="add-repo-search" type="text" placeholder="Search repositories…" class="pat-input" autocomplete="off" spellcheck="false" />
+      <div id="add-repo-error" class="login-error hidden"></div>
+      <ul id="add-repo-list" class="add-repo-list"></ul>
     </div>
   </div>
 

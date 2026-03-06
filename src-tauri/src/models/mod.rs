@@ -34,6 +34,21 @@ pub struct RestoreResult {
 }
 
 // ──────────────────────────────────────────────
+// Tracked repository model
+// ──────────────────────────────────────────────
+
+/// A user-curated tracked repository entry stored in the sidebar.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct TrackedRepo {
+    /// Fully-qualified repository name, e.g., "octocat/Hello-World".
+    pub full_name: String,
+    /// Repository owner login.
+    pub owner: String,
+    /// Repository name (without owner prefix).
+    pub name: String,
+}
+
+// ──────────────────────────────────────────────
 // Application state
 // ──────────────────────────────────────────────
 
@@ -46,6 +61,9 @@ pub struct AppState {
     pub active_account_id: Option<String>,
     /// All known accounts (metadata only — tokens stay in the keyring).
     pub accounts: Vec<Account>,
+    /// In-memory tracked repos (used only in dev-mock builds).
+    #[cfg(feature = "dev-mock")]
+    pub tracked_repos: Vec<TrackedRepo>,
 }
 
 // ──────────────────────────────────────────────

@@ -202,33 +202,34 @@ Every user request MUST follow this workflow:
         (Return to Phase 4 → Phase 5 → Phase 6)
                            ↓
 ┌──────────────────────────┴──────────────────────────────────┐
-│ PHASE 7: COMMIT SUMMARY & DELIVERY                          │
-│ Orchestrator prepares final commit information              │
+│ PHASE 7: COMMIT MESSAGE & DELIVERY                          │
+│ Orchestrator prepares final Git commit information          │
 │                                                             │
 │ Tasks:                                                      │
 │ • Aggregate all modified file paths from implementation     │
 │   and refinement phases                                     │
-│ • Summarize the feature, fix, or improvement implemented    │
-│ • Generate a conventional commit message                    │
-│ • Provide a concise developer-readable summary              │
+│ • Generate a concise commit message                         │
+│ • Provide a short description explaining the change         │
 │                                                             │
-│ Commit Message Format (Conventional Commits):               │
+│ Commit Format:                                              │
 │                                                             │
-│ type(scope): short description                              │
+│ <one-line summary>                                          │
 │                                                             │
-│ Example:                                                    │
-│ feat(auth): implement OAuth2 login flow                     │
+│ <description explaining what changed and why>               │
+│                                                             │
+│ Rules:                                                      │
+│ • First line MUST be a single concise summary               │
+│ • Maximum 72 characters preferred                           │
+│ • Description should explain the purpose and impact         │
+│ • Avoid bullet-point lists                                  │
 │                                                             │
 │ Output Structure:                                           │
 │                                                             │
 │ ## Commit Message                                           │
-│ <generated commit message>                                  │
 │                                                             │
-│ ## Summary of Changes                                       │
-│ • Feature or fix implemented                                │
-│ • Major architectural decisions                             │
-│ • Key files modified                                        │
-│ • Dependencies added or updated                             │
+│ <one-line summary>                                          │
+│                                                             │
+│ <description paragraph explaining the change>               │
 │                                                             │
 │ ## Modified Files                                           │
 │ - path/to/file1                                             │
@@ -241,7 +242,7 @@ Every user request MUST follow this workflow:
 │ ✔ Review approved                                           │
 │ ✔ Preflight passed                                          │
 │                                                             │
-│ Output must be copy-paste ready for git commit.             │
+│ Output must be ready to copy into `git commit`.             │
 └──────────────────────────┬──────────────────────────────────┘
                            ↓
 ┌─────────────────────────────────────────────────────────────┐
@@ -519,16 +520,38 @@ The project's preflight script defines them.
 
 - Transition to Phase 7
 
-Spawn Commit Summary generation.
+Spawn Commit Message generation.
 
-The Orchestrator must produce:
+The Orchestrator must produce a clean Git commit message using the exact structure below.
 
-1. Commit Title
-2. Commit Body
-3. List of Modified Files
-4. Short Human Summary of the Work Completed
+Output MUST follow this format:
 
-This output must be formatted as a ready-to-use Git commit message.
+<ONE LINE COMMIT SUMMARY>
+
+<DESCRIPTION PARAGRAPH EXPLAINING THE CHANGE>
+
+Modified Files:
+- path/to/file1
+- path/to/file2
+- path/to/file3
+
+Rules:
+
+• The FIRST line MUST be a one-line summary of the change  
+• The summary should be concise and ideally under 72 characters  
+• The SECOND section MUST be a short paragraph describing what was implemented and why  
+• The description should explain the change at a developer level  
+• The THIRD section MUST list all modified files collected from previous phases  
+
+Restrictions:
+
+• DO NOT include bullet-point summaries  
+• DO NOT include validation results  
+• DO NOT include build/test/preflight information  
+• DO NOT include review scores or grading tables  
+• ONLY output the three sections defined above  
+
+This output must be clean and copy-paste ready for use as a Git commit message.
 
 ---
 
