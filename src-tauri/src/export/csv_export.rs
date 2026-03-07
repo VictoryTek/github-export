@@ -18,9 +18,9 @@ pub fn export_to_csv(
 
     // ── Issues ──────────────────────────────
     if !issues.is_empty() {
-        wtr.write_record(["[Issues]", "", "", "", "", "", ""])?;
+        wtr.write_record(["[Issues]", "", "", "", "", "", "", "", ""])?;
         wtr.write_record([
-            "Number", "Title", "State", "Author", "Labels", "Created", "URL",
+            "Number", "Title", "State", "Author", "Labels", "Created", "URL", "Body", "Comment Count",
         ])?;
         for i in issues {
             wtr.write_record([
@@ -31,9 +31,11 @@ pub fn export_to_csv(
                 &i.labels.join(", "),
                 &i.created_at.to_rfc3339(),
                 &i.html_url,
+                i.body.as_deref().unwrap_or(""),
+                &i.comments.to_string(),
             ])?;
         }
-        wtr.write_record(["", "", "", "", "", "", ""])?;
+        wtr.write_record(["", "", "", "", "", "", "", "", ""])?;
     }
 
     // ── Pull Requests ───────────────────────

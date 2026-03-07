@@ -1,14 +1,33 @@
-use anyhow::{Context, Result};
-use genpdf::elements::{Break, Paragraph, TableLayout};
-use genpdf::style::Style;
-use genpdf::{Document, Element, SimplePageDecorator};
+use anyhow::Result;
+use printpdf::*;
+use std::fs::File;
+use std::io::BufWriter;
 
 use crate::models::{Issue, PullRequest, SecurityAlert, WorkflowRun};
 
-/// Default font family bundled with genpdf (Liberation Sans).
-const FONT_FAMILY: &str = "LiberationSans";
+// A4 page dimensions in millimetres (f32 required by printpdf 0.6 Mm type)
+const PAGE_W: f32 = 210.0;
+const PAGE_H: f32 = 297.0;
+const MARGIN_L: f32 = 15.0;
+// Starting y (near the top; PDF origin is bottom-left)
+const TOP_Y: f32 = 280.0;
+const BOTTOM_Y: f32 = 20.0;
+// Vertical step per line of text
+const LINE_H: f32 = 5.5;
 
-/// Export issues, pull requests, and security alerts to a PDF report.
+/// Truncate `s` to `max_chars` characters, appending "..." if longer.
+fn truncate(s: &str, max_chars: usize) -> String {
+    let chars: Vec<char> = s.chars().collect();
+    if chars.len() <= max_chars {
+        s.to_owned()
+    } else {
+        let t: String = chars[..max_chars].iter().collect();
+        format!("{}...", t)
+    }
+}
+
+/// Export issues, pull requests, security alerts, and workflow runs to a PDF report.
+/// Uses the PDF standard Helvetica font — no external font files are required.
 pub fn export_to_pdf(
     issues: &[Issue],
     pulls: &[PullRequest],
@@ -16,121 +35,200 @@ pub fn export_to_pdf(
     workflow_runs: &[WorkflowRun],
     path: &str,
 ) -> Result<()> {
-    // genpdf requires a font directory – we bundle Liberation Sans which ships
-    // with most Linux distros, or the user can place the .ttf files next to the
-    // binary.  On first run the font directory should be resolved correctly.
-    let font_dir = std::env::current_exe()
-        .ok()
-        .and_then(|p| p.parent().map(|d| d.to_path_buf()))
-        .unwrap_or_else(|| std::path::PathBuf::from("."));
+    let (doc, first_page, first_layer) = PdfDocument::new(
+        "GitHub Export Report",
+        Mm(PAGE_W),
+        Mm(PAGE_H),
+        "Layer 1",
+    );
 
-    let font_family = genpdf::fonts::from_files(&font_dir, FONT_FAMILY, None).context(
-        "Could not load LiberationSans fonts. Place LiberationSans-Regular.ttf, \
-             LiberationSans-Bold.ttf, LiberationSans-Italic.ttf, and \
-             LiberationSans-BoldItalic.ttf next to the executable.",
-    )?;
+    let font = doc
+        .add_builtin_font(BuiltinFont::Helvetica)
+        .map_err(|e| anyhow::anyhow!("{}", e))?;
+    let font_bold = doc
+        .add_builtin_font(BuiltinFont::HelveticaBold)
+        .map_err(|e| anyhow::anyhow!("{}", e))?;
 
-    let mut doc = Document::new(font_family);
-    doc.set_title("GitHub Export Report");
+    let mut layer = doc.get_page(first_page).get_layer(first_layer);
+    let mut y: f32 = TOP_Y;
 
-    let mut decorator = SimplePageDecorator::new();
-    decorator.set_margins(10);
-    doc.set_page_decorator(decorator);
+    // Write a line of text at the current y position, then advance downward.
+    macro_rules! put_text {
+        ($txt:expr, $size:expr, $bold:expr) => {{
+            let f = if $bold { &font_bold } else { &font };
+            layer.use_text($txt, $size, Mm(MARGIN_L), Mm(y), f);
+            y -= LINE_H;
+        }};
+    }
 
-    // ── Title ───────────────────────────────
-    doc.push(Paragraph::new("GitHub Export Report").styled(Style::new().bold().with_font_size(20)));
-    doc.push(Break::new(1));
+    // Add a new page if fewer than $n lines of space remain.
+    macro_rules! need_space {
+        ($n:expr) => {
+            if y < BOTTOM_Y + LINE_H * ($n as f32) {
+                let (pg, lr) = doc.add_page(Mm(PAGE_W), Mm(PAGE_H), "Layer 1");
+                layer = doc.get_page(pg).get_layer(lr);
+                y = TOP_Y;
+            }
+        };
+    }
 
-    // ── Issues ──────────────────────────────
+    // ── Document title ─────────────────────────────────────────────────────
+    put_text!("GitHub Export Report", 18.0, true);
+    y -= 6.0;
+
+    // ── Issues ─────────────────────────────────────────────────────────────
     if !issues.is_empty() {
-        doc.push(section_heading("Issues"));
-        let mut table = TableLayout::new(vec![1, 4, 1, 2]);
-        table.set_cell_decorator(genpdf::elements::FrameCellDecorator::new(true, true, false));
-        // Header row
-        push_table_row(&mut table, &["#", "Title", "State", "Author"]);
+        need_space!(3);
+        put_text!("Issues", 14.0, true);
+        y -= 2.0;
+
         for i in issues {
-            push_table_row(
-                &mut table,
-                &[&i.number.to_string(), &i.title, &i.state, &i.author],
+            need_space!(7);
+
+            put_text!(truncate(&format!("#{}: {}", i.number, i.title), 80), 11.0, true);
+            put_text!(
+                format!(
+                    "State: {}  |  Author: {}  |  Comments: {}",
+                    i.state, i.author, i.comments
+                ),
+                9.0,
+                false
             );
+            if !i.labels.is_empty() {
+                put_text!(
+                    format!("Labels: {}", truncate(&i.labels.join(", "), 70)),
+                    9.0,
+                    false
+                );
+            }
+            put_text!(
+                format!("Created: {}", i.created_at.format("%Y-%m-%d")),
+                9.0,
+                false
+            );
+            put_text!(truncate(&i.html_url, 90), 9.0, false);
+            if let Some(body) = &i.body {
+                if !body.is_empty() {
+                    put_text!(
+                        format!("Body: {}", truncate(&body.replace('\n', " "), 100)),
+                        8.0,
+                        false
+                    );
+                }
+            }
+            y -= 2.0;
         }
-        doc.push(table);
-        doc.push(Break::new(1));
     }
 
-    // ── Pull Requests ───────────────────────
+    // ── Pull Requests ──────────────────────────────────────────────────────
     if !pulls.is_empty() {
-        doc.push(section_heading("Pull Requests"));
-        let mut table = TableLayout::new(vec![1, 4, 1, 2]);
-        table.set_cell_decorator(genpdf::elements::FrameCellDecorator::new(true, true, false));
-        push_table_row(&mut table, &["#", "Title", "State", "Author"]);
+        need_space!(3);
+        y -= 4.0;
+        put_text!("Pull Requests", 14.0, true);
+        y -= 2.0;
+
         for pr in pulls {
-            push_table_row(
-                &mut table,
-                &[&pr.number.to_string(), &pr.title, &pr.state, &pr.author],
+            need_space!(5);
+
+            put_text!(truncate(&format!("#{}: {}", pr.number, pr.title), 80), 11.0, true);
+            put_text!(
+                format!(
+                    "State: {}  |  Author: {}  |  Draft: {}",
+                    pr.state, pr.author, pr.draft
+                ),
+                9.0,
+                false
             );
+            put_text!(
+                format!("Head: {}  ->  Base: {}", pr.head_branch, pr.base_branch),
+                9.0,
+                false
+            );
+            put_text!(truncate(&pr.html_url, 90), 9.0, false);
+            y -= 2.0;
         }
-        doc.push(table);
-        doc.push(Break::new(1));
     }
 
-    // ── Security Alerts ─────────────────────
+    // ── Security Alerts ────────────────────────────────────────────────────
     if !alerts.is_empty() {
-        doc.push(section_heading("Security Alerts"));
-        let mut table = TableLayout::new(vec![1, 1, 4, 2]);
-        table.set_cell_decorator(genpdf::elements::FrameCellDecorator::new(true, true, false));
-        push_table_row(&mut table, &["ID", "Severity", "Summary", "Package"]);
+        need_space!(3);
+        y -= 4.0;
+        put_text!("Security Alerts", 14.0, true);
+        y -= 2.0;
+
         for a in alerts {
-            push_table_row(
-                &mut table,
-                &[
-                    &a.id.to_string(),
-                    &a.severity,
-                    &a.summary,
-                    a.package_name.as_deref().unwrap_or("—"),
-                ],
+            need_space!(5);
+
+            put_text!(
+                truncate(&format!("#{} [{}]: {}", a.id, a.severity, a.summary), 80),
+                11.0,
+                true
             );
+            if let Some(pkg) = &a.package_name {
+                put_text!(
+                    format!(
+                        "Package: {}  Vulnerable: {}  Patched: {}",
+                        pkg,
+                        a.vulnerable_version_range.as_deref().unwrap_or("N/A"),
+                        a.patched_version.as_deref().unwrap_or("N/A"),
+                    ),
+                    9.0,
+                    false
+                );
+            }
+            put_text!(truncate(&a.html_url, 90), 9.0, false);
+            y -= 2.0;
         }
-        doc.push(table);
     }
 
-    // ── Workflow Runs ────────────────────────
+    // ── Workflow Runs ──────────────────────────────────────────────────────
     if !workflow_runs.is_empty() {
-        doc.push(section_heading("Workflow Runs"));
-        let mut table = TableLayout::new(vec![2, 2, 1, 1, 2]);
-        table.set_cell_decorator(genpdf::elements::FrameCellDecorator::new(true, true, false));
-        push_table_row(&mut table, &["Workflow", "Branch", "Status", "Conclusion", "Actor"]);
+        need_space!(3);
+        y -= 4.0;
+        put_text!("Workflow Runs", 14.0, true);
+        y -= 2.0;
+
         for r in workflow_runs {
-            push_table_row(
-                &mut table,
-                &[
-                    &r.name,
-                    r.head_branch.as_deref().unwrap_or("—"),
-                    &r.status,
-                    r.conclusion.as_deref().unwrap_or("—"),
-                    &r.actor_login,
-                ],
+            need_space!(5);
+
+            put_text!(
+                truncate(
+                    &format!(
+                        "{} [Branch: {}]",
+                        r.name,
+                        r.head_branch.as_deref().unwrap_or("N/A")
+                    ),
+                    80
+                ),
+                11.0,
+                true
             );
+            put_text!(
+                format!(
+                    "Status: {}  |  Conclusion: {}  |  Actor: {}",
+                    r.status,
+                    r.conclusion.as_deref().unwrap_or("N/A"),
+                    r.actor_login,
+                ),
+                9.0,
+                false
+            );
+            put_text!(
+                format!(
+                    "Started: {}",
+                    r.run_started_at.as_deref().unwrap_or(&r.created_at)
+                ),
+                9.0,
+                false
+            );
+            put_text!(truncate(&r.html_url, 90), 9.0, false);
+            y -= 2.0;
         }
-        doc.push(table);
     }
 
-    doc.render_to_file(path)
-        .context("Failed to write PDF file")?;
-
+    // ── Save ───────────────────────────────────────────────────────────────
+    let file = File::create(path).map_err(|e| anyhow::anyhow!("{}", e))?;
+    doc.save(&mut BufWriter::new(file))
+        .map_err(|e| anyhow::anyhow!("{}", e))?;
     Ok(())
-}
-
-// ── Helpers ─────────────────────────────────
-
-fn section_heading(text: &str) -> impl Element {
-    Paragraph::new(text).styled(Style::new().bold().with_font_size(14))
-}
-
-fn push_table_row(table: &mut TableLayout, cells: &[&str]) {
-    let mut row = table.row();
-    for cell in cells {
-        row.push_element(Paragraph::new(*cell));
-    }
-    row.push().expect("Failed to push table row");
 }
