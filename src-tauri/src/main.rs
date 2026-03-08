@@ -186,6 +186,99 @@ async fn fetch_issues(
         .map_err(|e| e.to_string())
 }
 
+/// Close an open issue.
+#[cfg(not(feature = "dev-mock"))]
+#[tauri::command]
+async fn close_issue(
+    owner: String,
+    repo: String,
+    issue_number: u64,
+    state: State<'_, Mutex<AppState>>,
+) -> Result<models::Issue, String> {
+    let client = {
+        let app = state.lock().map_err(|e| e.to_string())?;
+        app.client.clone().ok_or("Not authenticated")?
+    };
+    github::issues::close_issue(&client, &owner, &repo, issue_number)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+/// Reopen a closed issue.
+#[cfg(not(feature = "dev-mock"))]
+#[tauri::command]
+async fn reopen_issue(
+    owner: String,
+    repo: String,
+    issue_number: u64,
+    state: State<'_, Mutex<AppState>>,
+) -> Result<models::Issue, String> {
+    let client = {
+        let app = state.lock().map_err(|e| e.to_string())?;
+        app.client.clone().ok_or("Not authenticated")?
+    };
+    github::issues::reopen_issue(&client, &owner, &repo, issue_number)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+/// Add a comment to an issue.
+#[cfg(not(feature = "dev-mock"))]
+#[tauri::command]
+async fn add_issue_comment(
+    owner: String,
+    repo: String,
+    issue_number: u64,
+    body: String,
+    state: State<'_, Mutex<AppState>>,
+) -> Result<(), String> {
+    let trimmed = body.trim().to_string();
+    if trimmed.is_empty() {
+        return Err("Comment body cannot be empty".to_string());
+    }
+    if trimmed.len() > 65_536 {
+        return Err("Comment exceeds GitHub's maximum length of 65,536 characters".to_string());
+    }
+    let client = {
+        let app = state.lock().map_err(|e| e.to_string())?;
+        app.client.clone().ok_or("Not authenticated")?
+    };
+    github::issues::add_issue_comment(&client, &owner, &repo, issue_number, &trimmed)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+/// Create a new issue in the specified repository.
+#[cfg(not(feature = "dev-mock"))]
+#[tauri::command]
+async fn create_issue(
+    owner: String,
+    repo: String,
+    title: String,
+    body: Option<String>,
+    state: State<'_, Mutex<AppState>>,
+) -> Result<models::Issue, String> {
+    let title = title.trim().to_string();
+    if title.is_empty() {
+        return Err("Issue title cannot be empty".to_string());
+    }
+    if title.len() > 256 {
+        return Err("Issue title exceeds maximum length of 256 characters".to_string());
+    }
+    if let Some(ref b) = body {
+        if b.len() > 65_536 {
+            return Err("Issue body exceeds GitHub's maximum length of 65,536 characters".to_string());
+        }
+    }
+    let client = {
+        let app = state.lock().map_err(|e| e.to_string())?;
+        app.client.clone().ok_or("Not authenticated")?
+    };
+    github::issues::create_issue(&client, &owner, &repo, &title, body.as_deref())
+        .await
+        .map_err(|e| e.to_string())
+}
+
 /// Fetch pull requests for a given owner/repo with optional filters.
 #[cfg(not(feature = "dev-mock"))]
 #[tauri::command]
@@ -301,6 +394,10 @@ fn main() {
         logout,
         list_repos,
         fetch_issues,
+        close_issue,
+        reopen_issue,
+        add_issue_comment,
+        create_issue,
         fetch_pulls,
         fetch_security_alerts,
         get_pull_detail,
@@ -318,6 +415,10 @@ fn main() {
         mock::restore_session,
         mock::list_repos,
         mock::fetch_issues,
+        mock::close_issue,
+        mock::reopen_issue,
+        mock::add_issue_comment,
+        mock::create_issue,
         mock::fetch_pulls,
         mock::fetch_security_alerts,
         start_device_flow,

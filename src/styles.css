@@ -1178,3 +1178,144 @@ tbody tr:hover { background: rgba(88,166,255,0.06); }
 
 .add-repo-error-item { color: var(--red); }
 
+/* ── Issue action section ───────────────────── */
+
+.detail-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  border-top: 1px solid var(--border);
+  padding-top: 0.75rem;
+}
+
+.detail-action-group {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.btn-action {
+  padding: 0.3rem 0.85rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 600;
+  font-family: var(--font);
+  transition: opacity 0.15s, background 0.15s;
+  line-height: 1.5;
+}
+
+.btn-action:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.btn-close-issue {
+  background: var(--red);
+  color: #fff;
+  border-color: var(--red);
+}
+
+.btn-close-issue:hover:not(:disabled) {
+  opacity: 0.85;
+}
+
+.btn-reopen-issue {
+  background: var(--green);
+  color: #fff;
+  border-color: var(--green);
+}
+
+.btn-reopen-issue:hover:not(:disabled) {
+  opacity: 0.85;
+}
+
+.btn-add-comment {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+}
+
+.btn-add-comment:hover:not(:disabled) {
+  opacity: 0.85;
+}
+
+.issue-action-status,
+.issue-comment-status {
+  font-size: 0.78rem;
+}
+
+.issue-action-status.status-success,
+.issue-comment-status.status-success {
+  color: var(--green);
+}
+
+.issue-action-status.status-error,
+.issue-comment-status.status-error {
+  color: var(--red);
+}
+
+.detail-comment-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.issue-comment-input {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 0.84rem;
+  font-family: var(--font);
+  padding: 0.5rem 0.7rem;
+  resize: vertical;
+  min-height: 3.5rem;
+}
+
+.issue-comment-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.detail-comment-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Widen max-height for issue detail rows to accommodate actions section */
+#tab-issues .detail-row.expanded .detail-body {
+  max-height: 900px;
+}
+
+/* ── Create Issue button ─────────────────────── */
+#toolbar #btn-new-issue {
+  background: var(--green);
+  border: none;
+  color: #fff;
+}
+
+/* ── Create Issue modal inputs ───────────────── */
+#new-issue-body {
+  width: 100%;
+  padding: 0.5rem 0.7rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 0.84rem;
+  font-family: var(--font);
+  resize: vertical;
+  min-height: 5rem;
+}
+
+#new-issue-body:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+

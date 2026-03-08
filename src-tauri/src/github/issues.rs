@@ -1,4 +1,5 @@
 use anyhow::{Context, Result};
+use octocrab::models::IssueState;
 use octocrab::params;
 use octocrab::Octocrab;
 
@@ -79,6 +80,25 @@ pub async fn list_all_repos(client: &Octocrab) -> Result<Vec<Repo>> {
     Ok(repos)
 }
 
+/// Maps an octocrab issue API response to our domain `Issue` model.
+fn map_issue(i: octocrab::models::issues::Issue) -> crate::models::Issue {
+    crate::models::Issue {
+        number: i.number,
+        title: i.title,
+        state: format!("{:?}", i.state),
+        author: i.user.login.clone(),
+        labels: i.labels.iter().map(|l| l.name.clone()).collect(),
+        assignees: i.assignees.iter().map(|a| a.login.clone()).collect(),
+        created_at: i.created_at,
+        updated_at: i.updated_at,
+        closed_at: i.closed_at,
+        html_url: i.html_url.to_string(),
+        body: i.body,
+        comments: i.comments,
+        milestone: i.milestone.as_ref().map(|m| m.title.clone()),
+    }
+}
+
 /// Fetch issues for a specific repository, with optional filters.
 pub async fn fetch_issues(
     client: &Octocrab,
@@ -143,22 +163,85 @@ pub async fn fetch_issues(
         .into_iter()
         // GitHub's API returns PRs in the issues endpoint – filter them out
         .filter(|i| i.pull_request.is_none())
-        .map(|i| Issue {
-            number: i.number,
-            title: i.title,
-            state: format!("{:?}", i.state),
-            author: i.user.login.clone(),
-            labels: i.labels.iter().map(|l| l.name.clone()).collect(),
-            assignees: i.assignees.iter().map(|a| a.login.clone()).collect(),
-            created_at: i.created_at,
-            updated_at: i.updated_at,
-            closed_at: i.closed_at,
-            html_url: i.html_url.to_string(),
-            body: i.body,
-            comments: i.comments,
-            milestone: i.milestone.as_ref().map(|m| m.title.clone()),
-        })
+        .map(map_issue)
         .collect();
 
     Ok(issues)
+}
+
+/// Close an issue by setting its state to Closed.
+pub async fn close_issue(
+    client: &Octocrab,
+    owner: &str,
+    repo: &str,
+    issue_number: u64,
+) -> Result<crate::models::Issue> {
+    let updated = client
+        .issues(owner, repo)
+        .update(issue_number)
+        .state(IssueState::Closed)
+        .send()
+        .await
+        .context("Failed to close issue")?;
+    Ok(map_issue(updated))
+}
+
+/// Reopen a closed issue by setting its state to Open.
+pub async fn reopen_issue(
+    client: &Octocrab,
+    owner: &str,
+    repo: &str,
+    issue_number: u64,
+) -> Result<crate::models::Issue> {
+    let updated = client
+        .issues(owner, repo)
+        .update(issue_number)
+        .state(IssueState::Open)
+        .send()
+        .await
+        .context("Failed to reopen issue")?;
+    Ok(map_issue(updated))
+}
+
+/// Post a new comment on an issue.
+pub async fn add_issue_comment(
+    client: &Octocrab,
+    owner: &str,
+    repo: &str,
+    issue_number: u64,
+    body: &str,
+) -> Result<()> {
+    client
+        .issues(owner, repo)
+        .create_comment(issue_number, body)
+        .await
+        .context("Failed to add comment")?;
+    Ok(())
+}
+
+/// Create a new issue in the specified repository.
+pub async fn create_issue(
+    client: &Octocrab,
+    owner: &str,
+    repo: &str,
+    title: &str,
+    body: Option<&str>,
+) -> Result<crate::models::Issue> {
+    let issue = match body {
+        Some(b) => client
+            .issues(owner, repo)
+            .create(title)
+            .body(b)
+            .send()
+            .await
+            .context("Failed to create issue")?,
+        None => client
+            .issues(owner, repo)
+            .create(title)
+            .send()
+            .await
+            .context("Failed to create issue")?,
+    };
+
+    Ok(map_issue(issue))
 }

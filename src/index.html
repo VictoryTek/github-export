@@ -120,6 +120,7 @@
         <input id="search-input" type="text" placeholder="Search…" />
         <button id="refresh-btn" title="Refresh">&#8635;</button>
         <div class="spacer"></div>
+        <button id="btn-new-issue" class="hidden" disabled>+ New Issue</button>
         <button id="export-csv-btn" disabled>Export CSV</button>
         <button id="export-pdf-btn" disabled>Export PDF</button>
       </div>
@@ -198,6 +199,21 @@
 
   <script src="vendor/marked.min.js"></script>
   <script src="vendor/purify.min.js"></script>
+
+  <!-- Create Issue modal overlay -->
+  <div id="create-issue-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="create-issue-title">
+    <div class="modal-card">
+      <h2 id="create-issue-title" class="modal-title">Create New Issue</h2>
+      <p id="create-issue-subtitle" class="modal-subtitle"></p>
+      <input type="text" id="new-issue-title" placeholder="Issue title" maxlength="256" class="pat-input" autocomplete="off" />
+      <textarea id="new-issue-body" placeholder="Describe the issue (optional)" rows="6" maxlength="65536"></textarea>
+      <div id="create-issue-error" class="login-error hidden"></div>
+      <div class="modal-actions">
+        <button id="btn-create-issue-submit" class="btn-github-signin">Create Issue</button>
+        <button id="btn-create-issue-cancel" class="btn-cancel">Cancel</button>
+      </div>
+    </div>
+  </div>
   <script src="main.js"></script>
 </body>
 </html>

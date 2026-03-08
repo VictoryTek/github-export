@@ -456,3 +456,91 @@ pub fn get_workflow_runs(
         },
     ])
 }
+
+/// Mock: close an issue by returning it with state set to "Closed".
+#[tauri::command]
+pub fn close_issue(
+    _owner: String,
+    _repo: String,
+    issue_number: u64,
+    _state: tauri::State<'_, Mutex<AppState>>,
+) -> Result<Issue, String> {
+    Ok(Issue {
+        number: issue_number,
+        title: format!("Mock issue #{}", issue_number),
+        state: "Closed".to_string(),
+        author: "octocat".to_string(),
+        labels: vec![],
+        assignees: vec![],
+        created_at: dt("2025-11-01T09:15:00Z"),
+        updated_at: dt("2026-03-07T12:00:00Z"),
+        closed_at: Some(dt("2026-03-07T12:00:00Z")),
+        html_url: format!("https://github.com/octocat/Hello-World/issues/{}", issue_number),
+        body: None,
+        comments: 0,
+        milestone: None,
+    })
+}
+
+/// Mock: reopen an issue by returning it with state set to "Open".
+#[tauri::command]
+pub fn reopen_issue(
+    _owner: String,
+    _repo: String,
+    issue_number: u64,
+    _state: tauri::State<'_, Mutex<AppState>>,
+) -> Result<Issue, String> {
+    Ok(Issue {
+        number: issue_number,
+        title: format!("Mock issue #{}", issue_number),
+        state: "Open".to_string(),
+        author: "octocat".to_string(),
+        labels: vec![],
+        assignees: vec![],
+        created_at: dt("2025-11-01T09:15:00Z"),
+        updated_at: dt("2026-03-07T12:01:00Z"),
+        closed_at: None,
+        html_url: format!("https://github.com/octocat/Hello-World/issues/{}", issue_number),
+        body: None,
+        comments: 0,
+        milestone: None,
+    })
+}
+
+/// Mock: simulate posting a comment (no-op, always succeeds).
+#[tauri::command]
+pub fn add_issue_comment(
+    _owner: String,
+    _repo: String,
+    _issue_number: u64,
+    _body: String,
+    _state: tauri::State<'_, Mutex<AppState>>,
+) -> Result<(), String> {
+    Ok(())
+}
+
+/// Mock: create a new issue, returning a fake Issue with number 999.
+#[tauri::command]
+pub fn create_issue(
+    _owner: String,
+    _repo: String,
+    title: String,
+    body: Option<String>,
+    _state: tauri::State<'_, Mutex<AppState>>,
+) -> Result<Issue, String> {
+    Ok(Issue {
+        number: 999,
+        title,
+        state: "Open".to_string(),
+        author: "octocat".to_string(),
+        labels: vec![],
+        assignees: vec![],
+        created_at: dt("2026-03-07T12:00:00Z"),
+        updated_at: dt("2026-03-07T12:00:00Z"),
+        closed_at: None,
+        html_url: "https://github.com/octocat/Hello-World/issues/999".to_string(),
+        body,
+        comments: 0,
+        milestone: None,
+    })
+}

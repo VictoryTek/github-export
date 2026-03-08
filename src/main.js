@@ -538,6 +538,15 @@ $$(".tab").forEach((btn) => {
     btn.classList.add("active");
     activeTab = btn.dataset.tab;
     $(`#tab-${activeTab}`).classList.add("active");
+
+    // Show "New Issue" button only when on the issues tab
+    const btnNewIssue = document.getElementById("btn-new-issue");
+    if (activeTab === "issues") {
+      btnNewIssue.classList.remove("hidden");
+      btnNewIssue.disabled = selectedRepo === null;
+    } else {
+      btnNewIssue.classList.add("hidden");
+    }
   });
 });
 
@@ -664,6 +673,10 @@ async function refreshData() {
   loading.classList.add("hidden");
   exportCsv.disabled = false;
   exportPdf.disabled = false;
+  document.getElementById("btn-new-issue").disabled = false;
+  if (activeTab === "issues") {
+    document.getElementById("btn-new-issue").classList.remove("hidden");
+  }
 }
 
 // ── Rendering ───────────────────────────────────
@@ -702,7 +715,7 @@ function renderIssues() {
       </tr>
       <tr class="detail-row" id="detail-issues-${idx}">
         <td colspan="6">
-          <div class="detail-body">${buildIssueDetail(i)}</div>
+          <div class="detail-body">${buildIssueDetail(i, idx)}</div>
         </td>
       </tr>`)
     .join("");
@@ -838,6 +851,92 @@ async function doExport(format) {
   }
 }
 
+// ── Create Issue modal ──────────────────────────
+document.getElementById("btn-new-issue").addEventListener("click", () => {
+  const subtitle = document.getElementById("create-issue-subtitle");
+  subtitle.textContent = selectedRepo
+    ? `Creating in ${selectedRepo.owner}/${selectedRepo.name}`
+    : "";
+  document.getElementById("new-issue-title").value = "";
+  document.getElementById("new-issue-body").value = "";
+  document.getElementById("create-issue-error").classList.add("hidden");
+  document.getElementById("btn-create-issue-submit").disabled = false;
+  document.getElementById("btn-create-issue-cancel").disabled = false;
+  document.getElementById("create-issue-modal").classList.remove("hidden");
+  document.getElementById("new-issue-title").focus();
+});
+
+document.getElementById("btn-create-issue-cancel").addEventListener("click", () => {
+  document.getElementById("create-issue-modal").classList.add("hidden");
+  document.getElementById("new-issue-title").value = "";
+  document.getElementById("new-issue-body").value = "";
+  document.getElementById("create-issue-error").classList.add("hidden");
+});
+
+document.getElementById("create-issue-modal").addEventListener("click", (e) => {
+  if (e.target === document.getElementById("create-issue-modal")) {
+    document.getElementById("create-issue-modal").classList.add("hidden");
+    document.getElementById("new-issue-title").value = "";
+    document.getElementById("new-issue-body").value = "";
+    document.getElementById("create-issue-error").classList.add("hidden");
+  }
+});
+
+document.getElementById("btn-create-issue-submit").addEventListener("click", async () => {
+  if (!selectedRepo) return;
+  const titleInput = document.getElementById("new-issue-title");
+  const bodyInput = document.getElementById("new-issue-body");
+  const errorEl = document.getElementById("create-issue-error");
+  const submitBtn = document.getElementById("btn-create-issue-submit");
+  const cancelBtn = document.getElementById("btn-create-issue-cancel");
+
+  const title = titleInput.value.trim();
+  const body = bodyInput.value.trim() || null;
+
+  errorEl.classList.add("hidden");
+
+  if (!title) {
+    errorEl.textContent = "Issue title cannot be empty.";
+    errorEl.classList.remove("hidden");
+    return;
+  }
+  if (title.length > 256) {
+    errorEl.textContent = "Issue title must be 256 characters or fewer.";
+    errorEl.classList.remove("hidden");
+    return;
+  }
+  if (body && body.length > 65536) {
+    errorEl.textContent = "Issue body must be 65,536 characters or fewer.";
+    errorEl.classList.remove("hidden");
+    return;
+  }
+
+  submitBtn.disabled = true;
+  cancelBtn.disabled = true;
+
+  try {
+    const newIssue = await invoke("create_issue", {
+      owner: selectedRepo.owner,
+      repo: selectedRepo.name,
+      title,
+      body,
+    });
+
+    issues.unshift(newIssue);
+    renderIssues();
+    updateTabBadges(issues.length, pulls.length, alerts.length);
+
+    document.getElementById("create-issue-modal").classList.add("hidden");
+    titleInput.value = "";
+    bodyInput.value = "";
+  } catch (err) {
+    errorEl.textContent = esc(String(err));
+    errorEl.classList.remove("hidden");
+    submitBtn.disabled = false;
+    cancelBtn.disabled = false;
+  }
+});
+
 // ── Utils ───────────────────────────────────────
 function esc(str) {
   const el = document.createElement("span");
@@ -907,7 +1006,7 @@ async function toggleDetailRow(type, idx) {
 }
 
 // ── Detail panel builders ───────────────────────
-function buildIssueDetail(issue) {
+function buildIssueDetail(issue, idx) {
   const assignees = issue.assignees && issue.assignees.length
     ? issue.assignees.map(esc).join(", ")
     : "—";
@@ -917,6 +1016,7 @@ function buildIssueDetail(issue) {
   const milestone = issue.milestone ? esc(issue.milestone) : "—";
   const comments = issue.comments != null ? issue.comments : "—";
   const closedDate = issue.closed_at ? shortDate(issue.closed_at) : null;
+  const isOpen = issue.state.toLowerCase() === 'open';
 
   return `
     <div class="detail-content">
@@ -961,10 +1061,130 @@ function buildIssueDetail(issue) {
           <span>${closedDate}</span>
         </div>` : ""}
       </div>
+      <div class="detail-actions">
+        <div class="detail-action-group">
+          <button
+            class="${isOpen ? 'btn-action btn-close-issue' : 'btn-action btn-reopen-issue'}"
+            id="issue-action-btn-${idx}"
+            onclick="handleIssueStateChange(${idx})"
+          >${isOpen ? 'Close Issue' : 'Reopen Issue'}</button>
+          <span class="issue-action-status" id="issue-action-status-${idx}"></span>
+        </div>
+        <div class="detail-comment-form">
+          <textarea
+            class="issue-comment-input"
+            id="issue-comment-input-${idx}"
+            placeholder="Leave a comment…"
+            rows="3"
+          ></textarea>
+          <div class="detail-comment-footer">
+            <span class="issue-comment-status" id="issue-comment-status-${idx}"></span>
+            <button class="btn-action btn-add-comment" onclick="handleAddIssueComment(${idx})">Add Comment</button>
+          </div>
+        </div>
+      </div>
       <div class="detail-footer">
         <a href="${esc(issue.html_url)}" target="_blank" rel="noopener noreferrer" class="detail-open-link">Open on GitHub ↗</a>
       </div>
     </div>`;
+}
+
+async function handleIssueStateChange(idx) {
+  if (!selectedRepo) return;
+  const issue = issues[idx];
+  const btn = document.getElementById(`issue-action-btn-${idx}`);
+  const statusEl = document.getElementById(`issue-action-status-${idx}`);
+  if (!btn || !statusEl) return;
+
+  const isOpen = issue.state.toLowerCase() === 'open';
+  const commandName = isOpen ? 'close_issue' : 'reopen_issue';
+  const confirmMsg = isOpen
+    ? `Close issue #${issue.number}: "${issue.title}"?`
+    : `Reopen issue #${issue.number}: "${issue.title}"?`;
+
+  if (!confirm(confirmMsg)) return;
+
+  btn.disabled = true;
+  statusEl.textContent = isOpen ? 'Closing…' : 'Reopening…';
+  statusEl.className = 'issue-action-status';
+
+  try {
+    const updated = await invoke(commandName, {
+      owner: selectedRepo.owner,
+      repo: selectedRepo.name,
+      issueNumber: issue.number,
+    });
+
+    // Update the issues array in place
+    issues[idx] = updated;
+
+    // Surgically update the state badge in the data row (no full re-render)
+    const dataRow = document.querySelector(`#issues-table .data-row[data-idx="${idx}"]`);
+    if (dataRow) dataRow.cells[2].innerHTML = stateBadge(updated.state);
+
+    // Update the action button for the new state
+    const newIsOpen = updated.state.toLowerCase() === 'open';
+    btn.textContent = newIsOpen ? 'Close Issue' : 'Reopen Issue';
+    btn.className = `btn-action ${newIsOpen ? 'btn-close-issue' : 'btn-reopen-issue'}`;
+    btn.disabled = false;
+
+    statusEl.textContent = isOpen ? '✓ Issue closed' : '✓ Issue reopened';
+    statusEl.className = 'issue-action-status status-success';
+    setTimeout(() => {
+      statusEl.textContent = '';
+      statusEl.className = 'issue-action-status';
+    }, 3000);
+  } catch (err) {
+    statusEl.textContent = esc(String(err));
+    statusEl.className = 'issue-action-status status-error';
+    btn.disabled = false;
+  }
+}
+
+async function handleAddIssueComment(idx) {
+  if (!selectedRepo) return;
+  const issue = issues[idx];
+  const textarea = document.getElementById(`issue-comment-input-${idx}`);
+  const statusEl = document.getElementById(`issue-comment-status-${idx}`);
+  const detailRow = document.getElementById(`detail-issues-${idx}`);
+  const btn = detailRow ? detailRow.querySelector('.btn-add-comment') : null;
+  if (!textarea || !statusEl) return;
+
+  const body = (textarea.value || '').trim();
+  if (!body) {
+    statusEl.textContent = 'Comment cannot be empty.';
+    statusEl.className = 'issue-comment-status status-error';
+    return;
+  }
+
+  if (btn) btn.disabled = true;
+  statusEl.textContent = 'Posting…';
+  statusEl.className = 'issue-comment-status';
+
+  try {
+    await invoke('add_issue_comment', {
+      owner: selectedRepo.owner,
+      repo: selectedRepo.name,
+      issueNumber: issue.number,
+      body,
+    });
+
+    // Optimistically increment local comment count
+    issues[idx] = { ...issues[idx], comments: (issues[idx].comments || 0) + 1 };
+
+    textarea.value = '';
+    statusEl.textContent = '✓ Comment posted';
+    statusEl.className = 'issue-comment-status status-success';
+    setTimeout(() => {
+      statusEl.textContent = '';
+      statusEl.className = 'issue-comment-status';
+    }, 3000);
+  } catch (err) {
+    statusEl.textContent = esc(String(err));
+    statusEl.className = 'issue-comment-status status-error';
+  } finally {
+    if (btn) btn.disabled = false;
+  }
 }
 
 function buildPullDetail(pull) {
